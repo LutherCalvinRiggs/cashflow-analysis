@@ -165,8 +165,8 @@ The `{FINANCIAL_CONTEXT}` placeholder is assembled programmatically by `services
 MONTHLY SUMMARY (last {N} months):
 Month       | Income    | Expenses  | Net       | Balance
 ------------|-----------|-----------|-----------|----------
-2026-04     | $8,000   | $11,000   | -$3,000   | $14,000
-2026-03     | $8,000   | $12,000   | -$4,000   | $15,000
+2026-04     | $8,000    | $11,000   | -$3,000   | $14,000
+2026-03     | $8,000    | $12,000   | -$4,000   | $15,000
 ...
 
 CATEGORY BREAKDOWN (trailing 3 months avg):
@@ -179,13 +179,13 @@ Car Payment         $400/mo
 Other               $1,200/mo
 
 ACCOUNT BALANCES (most recent):
-Chase Checking (0000): $6,000
-Chase Savings (0000):  $4,000
-Total:                 $10,000
+Example Checking (0000): $6,000
+Example Savings (0000):  $4,000
+Total:                   $10,000
 
 FLAGS:
 - Credit card balance drifting +$400/mo (avg spend $3,900 vs avg payment $3,500)
-- Kid activity spend ($1,500/mo avg) exceeds $2,000/mo savings reserve by $100/mo
+- Kid activity spend ($1,500/mo avg) exceeds $1,400/mo savings reserve by $100/mo
 ```
 
 ---
