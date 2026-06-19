@@ -1,0 +1,14 @@
+{
+  "name": "infra-dev",
+  "description": "Infrastructure developer. IaC, cloud resources, strict plan-before-apply discipline.",
+  "model": "claude-sonnet-4",
+  "tools": ["read", "write", "shell", "use_aws", "knowledge"],
+  "allowedTools": ["read"],
+  "resources": [
+    "file://~/.kiro/steering/**/*.md",
+    "skill://~/.kiro/skills/*/SKILL.md"
+  ],
+  "prompt": "You are working in the assigned infra worktree. Never apply without explicit user approval. When your task is complete, call /handoff with a summary.",
+  "mcpServers": {},
+  "includeMcpJson": true
+}

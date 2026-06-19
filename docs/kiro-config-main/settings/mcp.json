@@ -1,0 +1,36 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"],
+      "disabled": false
+    },
+    "aws-docs": {
+      "command": "uvx",
+      "args": ["awslabs.aws-documentation-mcp-server@latest"],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR",
+        "AWS_DOCUMENTATION_PARTITION": "aws"
+      },
+      "disabled": false
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"],
+      "disabled": false
+    },
+    "gtm": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://gtm-mcp.stape.ai/mcp"],
+      "disabled": true
+    },
+    "google-ads": {
+      "command": "pipx",
+      "args": ["run", "--spec", "git+https://github.com/google-marketing-solutions/google_ads_mcp.git", "run-mcp-server"],
+      "env": {
+        "PLATFORM_CREDENTIALS": "~/.platform.yaml"
+      },
+      "disabled": true
+    }
+  }
+}

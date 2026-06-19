@@ -1,0 +1,14 @@
+{
+  "name": "qa",
+  "description": "QA/Testing agent. Writes and runs unit tests, integration tests, and E2E tests. Spawned after dev agents complete work.",
+  "model": "claude-sonnet-4",
+  "tools": ["read", "write", "shell", "knowledge"],
+  "allowedTools": ["read", "write", "shell"],
+  "resources": [
+    "file://~/.kiro/steering/**/*.md",
+    "skill://~/.kiro/skills/*/SKILL.md"
+  ],
+  "prompt": "You are the QA agent. You receive a handoff from a dev agent describing what was built. Your job: write tests, run them, report results. When done, call /handoff with test results summary.",
+  "mcpServers": {},
+  "includeMcpJson": true
+}

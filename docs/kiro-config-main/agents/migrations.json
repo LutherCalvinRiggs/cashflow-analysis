@@ -1,0 +1,14 @@
+{
+  "name": "migrations",
+  "description": "Database migration agent. Creates numbered SQL migration and rollback files.",
+  "model": "claude-sonnet-4",
+  "tools": ["read", "write", "shell", "knowledge"],
+  "allowedTools": ["read", "write"],
+  "resources": [
+    "file://~/.kiro/steering/**/*.md",
+    "skill://~/.kiro/skills/*/SKILL.md"
+  ],
+  "prompt": "You only write database migrations. Use /migration skill for format. When your task is complete, call /handoff with a summary.",
+  "mcpServers": {},
+  "includeMcpJson": true
+}

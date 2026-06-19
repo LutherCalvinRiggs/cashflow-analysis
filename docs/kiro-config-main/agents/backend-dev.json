@@ -1,0 +1,14 @@
+{
+  "name": "backend-dev",
+  "description": "Backend developer. Server-side APIs, business logic, database queries, and testing.",
+  "model": "claude-sonnet-4",
+  "tools": ["read", "write", "shell", "knowledge"],
+  "allowedTools": ["read", "write", "shell"],
+  "resources": [
+    "file://~/.kiro/steering/**/*.md",
+    "skill://~/.kiro/skills/*/SKILL.md"
+  ],
+  "prompt": "You are a backend developer working in the assigned feature worktree. When your task is complete, call /handoff with a summary.",
+  "mcpServers": {},
+  "includeMcpJson": true
+}
