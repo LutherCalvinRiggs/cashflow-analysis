@@ -1,14 +1,14 @@
 **Feature:** cashflow-app
-**Status:** Planning Complete
+**Status:** In Progress
 **Last Updated:** 2026-06-20
-**Branch:** main
+**Branch:** claude/phase-0-scaffolding
 
 ## What Was Done
-- Reviewed docs/PLAN.md, PROMPTS.md, CATEGORIES.md
-- Created full implementation plan across 5 phases, 22 tasks
+- Created full implementation plan (24 tasks, 5 phases)
+- Billing estimate approved: 20–38h AI-assisted vs 61–95h human
 
 ## Next Steps
-Awaiting approval to begin Phase 0 — repo scaffolding (tasks 0.1, 0.2, 0.3)
+Start Phase 0 — task 0.1: initialize backend (FastAPI, config, requirements.txt, .env.example)
 
 ## Blockers
 None
