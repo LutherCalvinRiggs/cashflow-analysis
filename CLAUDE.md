@@ -80,7 +80,7 @@ Never commit, push, or create a PR without going through these gates first.
 After every commit and push, output this exact block:
 
 ```
-Building in Public: Commit #${commit_number}
+Building in Public - Commit #${commit_number}:
 
 ${concise_one_liner_desc_of_commit}
 
