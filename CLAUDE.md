@@ -58,6 +58,23 @@ This is a locally-run personal finance tool: upload PDF bank statements → AI e
 
 All prompts live in `docs/PROMPTS.md` — that is the source of truth. Do not hardcode or modify prompts inline in service code; reference this file instead.
 
+## Approval gates — REQUIRED before every git operation
+
+### Before committing
+1. Show the proposed commit message
+2. List every file being staged
+3. **Wait for explicit approval before running `git commit`**
+
+### Before pushing
+1. Show the branch and number of commits being pushed
+2. **Wait for explicit approval before running `git push`**
+
+### Before creating a PR
+1. Show the full PR title and description
+2. **Wait for explicit approval before creating**
+
+Never commit, push, or create a PR without going through these gates first.
+
 ## After every commit
 
 After every commit and push, output this exact block:
