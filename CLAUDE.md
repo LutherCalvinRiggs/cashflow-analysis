@@ -58,6 +58,22 @@ This is a locally-run personal finance tool: upload PDF bank statements → AI e
 
 All prompts live in `docs/PROMPTS.md` — that is the source of truth. Do not hardcode or modify prompts inline in service code; reference this file instead.
 
+## After every commit
+
+After every commit and push, output this exact block:
+
+```
+Building in Public: Commit #${commit_number}
+
+${concise_one_liner_desc_of_commit}
+
+${commit_url}
+```
+
+- `commit_number` — total commit count: `git rev-list --count HEAD`
+- `concise_one_liner_desc_of_commit` — plain English, no conventional commit prefix
+- `commit_url` — `https://github.com/LutherCalvinRiggs/cashflow-analysis/commit/<sha>`
+
 ## Development conventions
 
 - Work task by task in the order defined in `docs/PLAN.md`. Each task = one commit (`feat: 1.2 AI extraction endpoint`).

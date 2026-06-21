@@ -15,6 +15,22 @@
 - All PRs target `main`
 - Use `/create-pr` skill to generate the PR
 
+## After every commit
+
+After every commit and push, output this exact block:
+
+```
+Building in Public: Commit #${commit_number}
+
+${concise_one_liner_desc_of_commit}
+
+${commit_url}
+```
+
+- `commit_number` — total commit count: `git rev-list --count HEAD`
+- `concise_one_liner_desc_of_commit` — plain English, no conventional commit prefix
+- `commit_url` — `https://github.com/LutherCalvinRiggs/cashflow-analysis/commit/<sha>`
+
 ## Subagents and git
 - Subagents do NOT commit or push — parent session handles all git operations
 - Subagents produce code; parent reviews, stages, and commits
