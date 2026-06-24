@@ -24,5 +24,8 @@ frontend/.vite/
 # Claude Code
 .claude/worktrees/
 
+# BIP pipeline output
+drafts/
+
 # OS
 .DS_Store
