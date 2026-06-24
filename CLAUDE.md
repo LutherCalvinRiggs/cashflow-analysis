@@ -77,7 +77,9 @@ Never commit, push, or create a PR without going through these gates first.
 
 ## After every commit
 
-After every commit and push, output this exact block:
+After every commit and push:
+
+1. Output this exact block:
 
 ```
 Building in Public - Commit #${commit_number}:
@@ -90,6 +92,10 @@ ${commit_url}
 - `commit_number` — total commit count: `git rev-list --count HEAD`
 - `concise_one_liner_desc_of_commit` — plain English, no conventional commit prefix
 - `commit_url` — `https://github.com/LutherCalvinRiggs/cashflow-analysis/commit/<sha>`
+
+2. Run `/bip` to generate a LinkedIn draft for the commit.
+   - Skip if the commit message starts with `chore:`
+   - Draft is saved to `drafts/` (gitignored) and printed inline
 
 ## Development conventions
 

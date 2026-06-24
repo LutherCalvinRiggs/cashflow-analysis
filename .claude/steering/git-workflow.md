@@ -34,7 +34,9 @@ Never commit, push, or create a PR without going through these gates first. "App
 
 ## After every commit
 
-After every commit and push, output this exact block:
+After every commit and push:
+
+1. Output this exact block:
 
 ```
 Building in Public - Commit #${commit_number}:
@@ -47,6 +49,10 @@ ${commit_url}
 - `commit_number` — total commit count: `git rev-list --count HEAD`
 - `concise_one_liner_desc_of_commit` — plain English, no conventional commit prefix
 - `commit_url` — `https://github.com/LutherCalvinRiggs/cashflow-analysis/commit/<sha>`
+
+2. Run `/bip` to generate a LinkedIn draft for the commit.
+   - Skip if the commit message starts with `chore:`
+   - The draft is saved to `drafts/` (gitignored) and printed inline
 
 ## Subagents and git
 - Subagents do NOT commit or push — parent session handles all git operations
