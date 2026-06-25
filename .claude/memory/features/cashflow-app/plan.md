@@ -4,22 +4,22 @@ Build the full cashflow-analysis application across 5 phases per docs/PLAN.md.
 
 ---
 
-## Phase 0 — Repo Scaffolding
+## Phase 0 — Repo Scaffolding ✅ COMPLETE (merged to main)
 *Goal: Empty but runnable skeleton. Both servers start without errors.*
 
-- [ ] **0.1** Initialize backend
+- [x] **0.1** Initialize backend
   - `backend/main.py` — FastAPI app, `GET /health` returns `{ status: "ok" }`
   - `backend/config.py` — load all env vars (API key, model, provider, DB URL)
   - `backend/requirements.txt` — fastapi, uvicorn, pdfplumber, sqlalchemy, python-dotenv, anthropic, openai
   - `.env.example` — ANTHROPIC_API_KEY, AI_PROVIDER, AI_MODEL, AI_BASE_URL, DATABASE_URL
 
-- [ ] **0.2** Initialize frontend
+- [x] **0.2** Initialize frontend
   - Vite + React scaffold in `frontend/`
   - Tailwind configured
   - `vite.config.js` — proxy `/api` to `http://localhost:8000`
   - `App.jsx` — placeholder layout: sidebar + main content + chat panel
 
-- [ ] **0.3** Initialize database
+- [x] **0.3** Initialize database
   - `backend/database.py` — SQLAlchemy engine + session factory
   - `backend/database.py` — define ORM models for `statements`, `transactions`, `monthly_stats`, `categories`
   - Tables created on startup via `Base.metadata.create_all()`
@@ -30,7 +30,7 @@ Build the full cashflow-analysis application across 5 phases per docs/PLAN.md.
 ## Phase 1 — PDF Ingestion + AI Extraction
 *Goal: Upload a PDF, get structured transactions back, store them.*
 
-- [ ] **1.1** PDF text extraction service
+- [x] **1.1** PDF text extraction service
   - `backend/services/pdf_extractor.py` using pdfplumber
   - Extract text page by page, return `{ pages: [...], full_text: "..." }`
   - Handle corrupt/unreadable PDFs gracefully — log error, return empty result with warning
