@@ -159,6 +159,17 @@ Build the full cashflow-analysis application across 5 phases per docs/PLAN.md.
 
 ---
 
+## Billing Estimate
+
+| | Human (no AI) | AI-Assisted |
+|---|---|---|
+| **Total** | 61–95h | 20–38h |
+| **Time Saved** | — | ~62% (41–57h) |
+
+Highest complexity: 1.3 Upload endpoint (wires extractor + AI + DB). Biggest risk: AI prompt tuning quality is iterative.
+
+---
+
 ## Risks / Notes
 
 - Task 1.3 depends on 1.2 and 1.4 — build AI client and categorizer before wiring the upload endpoint
