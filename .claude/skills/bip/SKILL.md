@@ -79,6 +79,8 @@ Produce these six fields:
 <blank line>
 <call_to_action as a direct question>
 <blank line>
+Commit: https://github.com/LutherCalvinRiggs/cashflow-analysis/commit/<full-sha>
+<blank line>
 Link to the public repo is in the comments below!
 ```
 

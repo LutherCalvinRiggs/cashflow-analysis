@@ -128,7 +128,11 @@ def build_context_from_commit(data: dict) -> tuple[str, str]:
 
     commit_type = _commit_type_hint(message, changed)
 
+    full_sha = data["sha"]
+    commit_url = f"https://github.com/{REPO_OWNER}/{REPO_NAME}/commit/{full_sha}"
+
     context = f"""COMMIT: {sha}
+COMMIT_URL: {commit_url}
 DATE: {date}
 MESSAGE: {message}
 TYPE_HINT: {commit_type}
@@ -185,7 +189,10 @@ FORMATTING RULES for formatted_full_text:
 8. Empty line
 9. The call_to_action as a direct question to the reader
 10. Empty line
-11. Final line exactly: "Link to the public repo is in the comments below!"
+10. Empty line
+11. "Commit: <COMMIT_URL from context>" (the full GitHub commit URL)
+12. Empty line
+13. Final line exactly: "Link to the public repo is in the comments below!"
 
 NO: flowery adjectives, "excited to share", "game-changer", passive voice, filler phrases
 YES: direct verbs, specific numbers where possible, honest about complexity
