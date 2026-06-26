@@ -137,5 +137,5 @@ Print the full post to the conversation so the user can review it inline without
 
 - Never post to LinkedIn — output drafts only
 - If GitHub MCP is unavailable, fall back to `git log -1 --format="%H %s" HEAD` and `git diff HEAD~1 HEAD --stat` via Bash
-- Skip the draft (log a note) if the commit message starts with `chore:` — not worth a post
+- Generate a draft for every commit regardless of type prefix
 - `drafts/` is gitignored — never stage or commit files from it
