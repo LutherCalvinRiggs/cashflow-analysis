@@ -94,7 +94,7 @@ ${commit_url}
 - `commit_url` — `https://github.com/LutherCalvinRiggs/cashflow-analysis/commit/<sha>`
 
 2. Run `/bip` to generate a LinkedIn draft for the commit.
-   - Skip if the commit message starts with `chore:`
+   - Run for every commit regardless of type prefix
    - Draft is saved to `drafts/` (gitignored) and printed inline
 
 ## Development conventions
