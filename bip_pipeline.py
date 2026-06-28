@@ -31,11 +31,10 @@ REPO_OWNER = "LutherCalvinRiggs"
 REPO_NAME = "cashflow-analysis"
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
+AI_API_KEY = os.getenv("AI_API_KEY", "")
 AI_PROVIDER = os.getenv("AI_PROVIDER", "anthropic")
 AI_MODEL = os.getenv("AI_MODEL", "claude-sonnet-4-6")
 AI_BASE_URL = os.getenv("AI_BASE_URL", "")
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
 DRAFTS_DIR = Path(__file__).parent / "drafts"
 
@@ -218,7 +217,7 @@ def generate_post(context: str) -> LinkedInPost:
 def _call_anthropic(context: str) -> LinkedInPost:
     import anthropic
 
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    client = anthropic.Anthropic(api_key=AI_API_KEY)
 
     schema = LinkedInPost.model_json_schema()
     # Remove $defs indirection if Pydantic added any — Anthropic handles flat schemas best
@@ -248,7 +247,7 @@ def _call_anthropic(context: str) -> LinkedInPost:
 def _call_openai(context: str) -> LinkedInPost:
     from openai import OpenAI
 
-    kwargs: dict = {"api_key": OPENAI_API_KEY}
+    kwargs: dict = {"api_key": AI_API_KEY}
     if AI_BASE_URL:
         kwargs["base_url"] = AI_BASE_URL
 
@@ -322,8 +321,8 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true", help="Print post but don't save to drafts/")
     args = parser.parse_args()
 
-    if not ANTHROPIC_API_KEY and not OPENAI_API_KEY:
-        sys.exit("Error: set ANTHROPIC_API_KEY or OPENAI_API_KEY in .env")
+    if not AI_API_KEY:
+        sys.exit("Error: set AI_API_KEY in .env")
 
     try:
         if args.issue:
