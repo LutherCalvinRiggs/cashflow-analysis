@@ -24,6 +24,8 @@ class Statement(Base):
     uploaded_at = Column(DateTime, default=datetime.utcnow)
     bank_name = Column(String, nullable=True)
     statement_month = Column(String, nullable=True)  # "YYYY-MM"
+    account_last4 = Column(String, nullable=True)
+    account_type = Column(String, nullable=True)     # "checking" | "savings" | "credit" | "unknown"
     raw_text = Column(Text, nullable=True)
 
 
@@ -36,6 +38,7 @@ class Transaction(Base):
     description = Column(String, nullable=False)
     amount = Column(Float, nullable=False)
     type = Column(String, nullable=False)          # "debit" | "credit"
+    is_internal_transfer = Column(Integer, default=0)  # 0/1 boolean
     category = Column(String, nullable=True)
     confidence = Column(Float, nullable=True)
 
