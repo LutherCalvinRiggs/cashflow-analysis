@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from database import engine, init_db
+from routes.upload import router as upload_router
 
 
 @asynccontextmanager
@@ -21,6 +22,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(upload_router)
 
 
 @app.get("/health")
