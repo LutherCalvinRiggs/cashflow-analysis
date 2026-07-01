@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from database import Statement, Transaction, get_db
 from models import UploadResponse
 from services.ai_client import complete
+from services.categorizer import categorize
 from services.pdf_extractor import extract_text
 from services.prompt_loader import extraction_system_prompt, extraction_user_prompt
 
@@ -89,9 +90,12 @@ async def upload_statement(file: UploadFile, db: Session = Depends(get_db)):
 
     db.commit()
 
-    warnings = ai_data.get("warnings") or []
+    cat_result = categorize(statement.id, db)
+
+    warnings = (ai_data.get("warnings") or []) + cat_result["warnings"]
     return UploadResponse(
         statement_id=statement.id,
         transaction_count=len(transactions),
+        new_map_entries=cat_result["new_map_entries"],
         warnings=warnings,
     )
