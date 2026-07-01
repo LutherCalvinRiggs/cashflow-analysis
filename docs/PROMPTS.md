@@ -89,6 +89,7 @@ Rules:
 - "Internal Transfer" is reserved for transfers between the user's own accounts. Do not use it for bill payments or credit card payments.
 - If a transaction clearly fits a specific category, use it — even if the description is vague.
 - If you genuinely cannot determine the category, use "Uncategorized".
+- For "suggested_key": strip leading digit clusters and punctuation, lowercase, collapse whitespace. This key is used for future merchant matching — make it stable and reusable (e.g. "foodcellar lic", "netflix", "con edison", "zelle payment").
 - Return ONLY valid JSON. No explanation, no markdown.
 ```
 
@@ -111,7 +112,8 @@ Return a JSON array in this exact format, preserving the original transaction or
     "id": "original transaction id",
     "category": "exact category name from the list",
     "confidence": "high | medium | low",
-    "notes": "one sentence explanation if confidence is medium or low, otherwise null"
+    "notes": "one sentence explanation if confidence is medium or low, otherwise null",
+    "suggested_key": "normalized merchant name for future matching — lowercase, no leading digits or punctuation, e.g. 'foodcellar lic' or 'netflix'"
   }
 ]
 ```

@@ -3,7 +3,7 @@ import re
 from datetime import datetime
 from pathlib import Path
 
-from sqlalchemy import JSON, Column, DateTime, Float, ForeignKey, Integer, String, Text, create_engine, text
+from sqlalchemy import JSON, Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text, create_engine, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from config import DATABASE_URL
@@ -41,6 +41,7 @@ class Transaction(Base):
     is_internal_transfer = Column(Integer, default=0)  # 0/1 boolean
     category = Column(String, nullable=True)
     confidence = Column(Float, nullable=True)
+    notes = Column(Text, nullable=True)
 
 
 class MonthlyStat(Base):
@@ -61,6 +62,19 @@ class Category(Base):
     name = Column(String, nullable=False, unique=True)
     description = Column(Text, nullable=False)
     color = Column(String, nullable=False)
+
+
+class MerchantMap(Base):
+    __tablename__ = "merchant_map"
+
+    id = Column(Integer, primary_key=True, index=True)
+    pattern = Column(String, nullable=False, unique=True)   # normalized key, e.g. "foodcellar lic"
+    display_name = Column(String, nullable=False)           # original description for display
+    category = Column(String, nullable=False)
+    confidence = Column(Float, nullable=False, default=0.6)
+    source = Column(String, nullable=False, default="ai")   # "ai" | "user"
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 def get_db():
