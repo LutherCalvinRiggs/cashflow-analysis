@@ -9,6 +9,7 @@ from models import UploadResponse
 from services.ai_client import complete
 from services.categorizer import categorize
 from services.pdf_extractor import extract_text
+from services.pii_filter import redact
 from services.prompt_loader import extraction_system_prompt, extraction_user_prompt
 
 logger = logging.getLogger(__name__)
@@ -47,9 +48,10 @@ async def upload_statement(file: UploadFile, db: Session = Depends(get_db)):
         raise HTTPException(status_code=422, detail=error)
 
     full_text = extraction["full_text"]
+    redacted_text = redact(full_text)
 
     try:
-        ai_raw = complete(extraction_system_prompt(), extraction_user_prompt(full_text))
+        ai_raw = complete(extraction_system_prompt(), extraction_user_prompt(redacted_text))
         ai_data = _parse_ai_response(ai_raw)
     except (json.JSONDecodeError, ValueError) as exc:
         logger.error("AI extraction failed: %s", exc)
