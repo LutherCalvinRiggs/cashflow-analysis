@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Ledger from "./components/Ledger";
 import UploadPanel from "./components/UploadPanel";
 
 const NAV = [
@@ -35,9 +36,7 @@ export default function App() {
       {/* Main content */}
       <main className="flex-1 overflow-auto">
         {view === "upload" && <UploadPanel />}
-        {view === "ledger" && (
-          <div className="p-6 text-gray-500 text-sm">Ledger coming in Phase 2</div>
-        )}
+        {view === "ledger" && <Ledger />}
         {view === "charts" && (
           <div className="p-6 text-gray-500 text-sm">Charts coming in Phase 3</div>
         )}
