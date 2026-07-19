@@ -1,17 +1,21 @@
 **Feature:** cashflow-app
-**Status:** In Progress
-**Last Updated:** 2026-06-25
+**Status:** In Progress — awaiting user testing before merge
+**Last Updated:** 2026-07-19
 **Branch:** claude/phase-1-extraction
+**Open PR:** #3 — Phase 1 + 2 (not yet merged)
 
 ## What Was Done
-- Phase 0 complete and merged to main (PR #2) — backend, frontend, database
-- BIP pipeline added: `bip_pipeline.py`, `/bip` skill, post-commit workflow integration
-- Task 1.1 complete: `backend/services/pdf_extractor.py` — pdfplumber wrapper, per-page extraction, graceful error handling
+- Phase 1 complete: PDF extraction, AI client wrapper, upload endpoint, merchant map + batched AI categorization, UploadPanel UI
+- PII redaction hardening: always-on labeled-pattern filter before AI (pii_filter.py)
+- Phase 2 complete: GET /api/transactions (paginated + filtered), GET /api/categories, Ledger.jsx, FilterBar.jsx
+- /bip skill persisted to repo (.claude/skills/bip/SKILL.md)
+- E2E test plan saved to .claude/memory/features/cashflow-app/tests/e2e-test-plan.md
+- 40 automated tests passing (categorization, PII filter, transactions API)
 
 ## Next Steps
-- Task 1.2: AI client wrapper — `backend/services/ai_client.py`, `complete(system, user) -> str`, Anthropic + OpenAI support
-- Task 1.3: Upload endpoint — `POST /api/upload`, wires extractor + ai_client + DB
-- Task 1.4: Categorization service
+1. User runs e2e test plan against local stack (test plan in tests/e2e-test-plan.md)
+2. Merge PR #3 to main
+3. Begin Phase 3: Charts + stats API (GET /api/stats/monthly, /categories, /balance; Recharts components)
 
 ## Blockers
-None
+None — waiting on user testing
