@@ -1,11 +1,8 @@
-<<<<<<< HEAD
 ---
 name: bip
 description: Generate a "Build in Public" LinkedIn post draft from a recent commit or issue. Run automatically after every commit+push. Fetches context via GitHub MCP, applies conversion mappings, saves draft to drafts/.
 ---
 
-=======
->>>>>>> 23189cb (chore: persist /bip skill to repo so future sessions have it)
 ## Usage
 
 `/bip` — draft from the latest commit  
