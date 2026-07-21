@@ -1,16 +1,13 @@
-<<<<<<< HEAD
 ---
 name: bip
 description: Generate a "Build in Public" LinkedIn post draft from a recent commit or issue. Run automatically after every commit+push. Fetches context via GitHub MCP, applies conversion mappings, saves draft to drafts/.
 ---
 
-=======
->>>>>>> 23189cb (chore: persist /bip skill to repo so future sessions have it)
 ## Usage
 
-`/bip` — draft from the latest commit  
-`/bip <sha>` — draft from a specific commit hash  
-`/bip issue:<number>` — draft from a specific issue  
+`/bip` — draft from the latest commit
+`/bip <sha>` — draft from a specific commit hash
+`/bip issue:<number>` — draft from a specific issue
 
 ---
 
@@ -24,7 +21,7 @@ description: Generate a "Build in Public" LinkedIn post draft from a recent comm
 
 ### 2. Fetch data via GitHub MCP
 
-For commits: use `mcp__github__get_commit` with `detail: "stats"` on `LutherCalvinRiggs/cashflow-analysis`.  
+For commits: use `mcp__github__get_commit` with `detail: "stats"` on `LutherCalvinRiggs/cashflow-analysis`.
 For issues: use `mcp__github__issue_read` on the same repo.
 
 ### 3. Classify the commit
@@ -59,11 +56,11 @@ Translate the technical change into user-facing impact using the matching lens:
 
 Produce these six fields:
 
-**hook** — Scroll-stopping first line, under 10 words. High stakes. No corporate jargon.  
-**the_problem** — The real-world financial or technical pain this addresses.  
-**the_solution** — How this commit directly resolves it.  
-**technical_payload** — 1–2 sentences on the engineering approach.  
-**call_to_action** — A direct question inviting engagement from devs or finance-minded readers.  
+**hook** — Scroll-stopping first line, under 10 words. High stakes. No corporate jargon.
+**the_problem** — The real-world financial or technical pain this addresses.
+**the_solution** — How this commit directly resolves it.
+**technical_payload** — 1–2 sentences on the engineering approach.
+**call_to_action** — A direct question inviting engagement from devs or finance-minded readers.
 **formatted_full_text** — Full mobile-optimized post (see format below).
 
 #### Formatting rules for `formatted_full_text`
@@ -87,12 +84,12 @@ Commit: https://github.com/LutherCalvinRiggs/cashflow-analysis/commit/<full-sha>
 Link to the public repo is in the comments below!
 ```
 
-NO: "excited to share", "game-changer", passive voice, flowery adjectives  
+NO: "excited to share", "game-changer", passive voice, flowery adjectives
 YES: direct verbs, specific file/feature names, honest about complexity
 
 ### 6. Save the draft
 
-Create the `drafts/` directory if it doesn't exist.  
+Create the `drafts/` directory if it doesn't exist.
 Save to: `drafts/linkedin_bip_<YYYY-MM-DD>_<source>.md`
 
 File format:
