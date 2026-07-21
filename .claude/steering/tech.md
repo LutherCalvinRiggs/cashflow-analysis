@@ -1,7 +1,7 @@
 # Tech Stack
 
 ## Backend
-- Python + FastAPI — API server on localhost:8000
+- Python + FastAPI — API server on localhost:8787
 - SQLite via SQLAlchemy — single-file DB, auto-created on startup
 - pdfplumber — PDF text extraction
 - Anthropic Python SDK or openai SDK — provider-agnostic via `AI_PROVIDER` env var
@@ -11,7 +11,7 @@
 - React + Vite — SPA on localhost:5173
 - TailwindCSS — utility-first styling
 - Recharts — charting library
-- Vite proxies `/api` → `http://localhost:8000`
+- Vite proxies `/api` → `http://localhost:8787`
 
 ## Configuration
 - All env vars flow through `backend/config.py` — no hardcoded strings elsewhere

@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 cd backend
 pip install -r requirements.txt
-python main.py                  # starts FastAPI on localhost:8000
+python main.py                  # starts FastAPI on localhost:8787
 pytest tests/                   # run all tests
 pytest tests/test_extraction.py # run a single test file
 ```
@@ -21,7 +21,7 @@ npm run dev     # starts Vite dev server on localhost:5173, proxied to backend
 npm run build
 ```
 
-The Vite dev server proxies `/api` to `http://localhost:8000`. Both servers must be running during development.
+The Vite dev server proxies `/api` to `http://localhost:8787`. Both servers must be running during development.
 
 **Environment**: Copy `.env.example` to `.env` and fill in:
 - `ANTHROPIC_API_KEY` (or OpenAI key)
