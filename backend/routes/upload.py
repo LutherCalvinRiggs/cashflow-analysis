@@ -52,6 +52,11 @@ async def upload_statement(file: UploadFile, db: Session = Depends(get_db)):
 
     try:
         ai_raw = complete(extraction_system_prompt(), extraction_user_prompt(redacted_text))
+    except Exception as exc:
+        logger.exception("AI extraction request failed")
+        raise HTTPException(status_code=502, detail=f"AI request failed: {exc}")
+
+    try:
         ai_data = _parse_ai_response(ai_raw)
     except (json.JSONDecodeError, ValueError) as exc:
         logger.error("AI extraction failed: %s", exc)
