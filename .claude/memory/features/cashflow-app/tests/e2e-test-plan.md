@@ -30,7 +30,7 @@
 ## 3. Ledger
 - [ ] 3.1 Transactions listed most-recent-first
 - [ ] 3.2 Credits render green, debits red; amounts formatted correctly (watch signs — a common extraction bug)
-- [ ] 3.3 Click a row → expands showing AI notes and category confidence
+- [x] 3.3 Click a row → expands showing AI notes and category confidence, plus an editable category dropdown (added 2026-07-20)
 - [ ] 3.4 Pagination: with both statements uploaded, page through; total count consistent; no repeated or skipped rows across pages
 - [ ] 3.5 Category badges match the expanded row's category
 
@@ -48,7 +48,45 @@
 - [ ] 5.2 Temporarily set `AI_API_KEY` to garbage, restart, upload → expect a clear failure. **Known gap:** error handling pass is Phase 5 (task 5.1), so an ugly error is acceptable; note what actually happens
 - [ ] 5.3 Browser hard-refresh mid-session → app recovers, ledger reloads
 
+## 6. Merchant map (behavioral)
+- [ ] 6.1 Upload the same statement twice → second upload shows 0 new merchant-map entries (all hits from map)
+- [ ] 6.2 Upload a second statement from a different month with overlapping merchants → overlapping merchants resolved from map, only new merchants go to AI
+- [x] 6.3 Edit a merchant's category via the ledger UI → change applies to every transaction from that merchant, not just the one clicked (verified 2026-07-20 with "Zelle Payment To Jane Doe LLC" — 4 transactions, all updated)
+
+## 7. API smoke tests (curl)
+```bash
+curl http://localhost:8787/health
+# Expected: {"status":"ok","db":"ok"}
+
+curl "http://localhost:8787/api/transactions" | jq '.total'
+curl "http://localhost:8787/api/transactions?category=Groceries" | jq '.items[].category' | sort -u
+curl "http://localhost:8787/api/transactions?type=debit" | jq '.items[].type' | sort -u
+curl "http://localhost:8787/api/transactions?date_from=2026-01-01&date_to=2026-01-31" | jq '.total'
+curl "http://localhost:8787/api/transactions?exclude_transfers=true" | jq '.items[].is_internal_transfer' | sort -u
+# Expected: only false
+
+curl "http://localhost:8787/api/transactions?page=2&page_size=5" | jq '{page,pages,total,count:.items|length}'
+curl "http://localhost:8787/api/categories" | jq '.[].name'
+```
+
+## 8. Automated test suite
+```bash
+cd backend
+.venv/bin/python -m pytest tests/ -v
+# Expected: 48 passed, 0 failed
+```
+Key test files:
+- `tests/test_categorization.py` — normalize, map hit/miss, upsert, batch AI, word-subset merchant matching
+- `tests/test_pii_filter.py` — account, routing, card (4×4 + unbroken), SSN, realistic header
+- `tests/test_transactions_api.py` — list all, filter by category/type/date, exclude transfers, pagination, sort order, category PATCH endpoint
+
 ---
 
 ## Recording results
-For each failure or surprise, note: section number, what happened, and (if backend) the `[api]` log lines from the `npm run start` output. Findings feed the post-test task iteration (tasks #1–4 already queued: extraction tests, useTransactions hook, frontend test tooling, CLAUDE.md drift).
+For each failure or surprise, note: section number, what happened, and (if backend) the `[api]` log lines from the `npm run start` output. Findings feed the post-test task iteration — see TaskList for the current backlog (extraction tests, frontend test tooling, CLAUDE.md env var drift, upload.py error-detail review).
+
+## Known gaps / out of scope for this phase
+- No test for the frontend against a live backend (Playwright integration tests — Phase 4 candidate)
+- No test for AI extraction quality itself (non-deterministic; covered by manual spot-checks above, not automated)
+- PII redaction of unlabeled numbers, numbers embedded in transaction descriptions, and non-US formats (IBAN, sort codes, BSBs) is a documented known gap — not tested here
+- No load or concurrency testing
