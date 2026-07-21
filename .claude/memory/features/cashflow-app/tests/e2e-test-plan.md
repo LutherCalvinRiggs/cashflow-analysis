@@ -16,7 +16,7 @@
 ## 1. Upload — happy path
 - [x] 1.1 Open `localhost:5173`, locate UploadPanel. Drag-and-drop a statement PDF → progress indicator appears
 - [x] 1.2 On completion, summary shows a plausible transaction count and no warnings
-- [ ] 1.3 Repeat via the file-picker (not drag-and-drop) with the second statement
+- [x] 1.3 Repeat via the file-picker (not drag-and-drop) with the second statement
 - [x] 1.4 Spot-check accuracy: pick 5 transactions from the source PDF, confirm each appears in the ledger with correct **date, description, amount, and debit/credit direction**
 - [x] 1.5 Spot-check categorization: are the AI-assigned categories sensible for ~10 transactions? Note any misfires (feeds the prompt-tuning loop, not pass/fail)
 - [ ] 1.6 PII check: expand a few rows / inspect the DB (`sqlite3 backend/cashflow.db 'select description from transactions limit 20;'`) — no full account numbers, card numbers, routing numbers, or SSNs should appear
