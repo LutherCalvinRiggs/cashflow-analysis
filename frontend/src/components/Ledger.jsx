@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { api } from "../api/client";
+import { Fragment, useCallback, useEffect, useState } from "react";
+import { api, updateTransactionCategory } from "../api/client";
 
 const PAGE_SIZE = 50;
 
@@ -37,22 +37,22 @@ function buildQuery(filters, page) {
 
 export default function Ledger({ filters = {} }) {
   const [txns, setTxns] = useState([]);
-  const [catColors, setCatColors] = useState({});
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState({ total: 0, pages: 1 });
+  const [expandedId, setExpandedId] = useState(null);
+  const [editCategory, setEditCategory] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+
+  const catColors = Object.fromEntries(categories.map((c) => [c.name, c.color]));
 
   useEffect(() => {
     api
       .request("/categories")
-      .then((cats) => {
-        const map = {};
-        cats.forEach((c) => {
-          map[c.name] = c.color;
-        });
-        setCatColors(map);
-      })
+      .then(setCategories)
       .catch(() => {});
   }, []);
 
@@ -60,10 +60,10 @@ export default function Ledger({ filters = {} }) {
     setPage(1);
   }, [filters]);
 
-  useEffect(() => {
+  const loadTransactions = useCallback(() => {
     setLoading(true);
     setError(null);
-    api
+    return api
       .request(buildQuery(filters, page))
       .then((data) => {
         setTxns(data.items);
@@ -72,6 +72,38 @@ export default function Ledger({ filters = {} }) {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [filters, page]);
+
+  useEffect(() => {
+    loadTransactions();
+  }, [loadTransactions]);
+
+  function toggleExpand(tx) {
+    if (expandedId === tx.id) {
+      setExpandedId(null);
+      return;
+    }
+    setExpandedId(tx.id);
+    setEditCategory(tx.category || "");
+    setSaveError(null);
+  }
+
+  async function saveCategory(tx) {
+    if (!editCategory || editCategory === tx.category) {
+      setExpandedId(null);
+      return;
+    }
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await updateTransactionCategory(tx.id, editCategory);
+      await loadTransactions();
+      setExpandedId(null);
+    } catch (err) {
+      setSaveError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   if (error) {
     return <div className="p-6 text-red-400 text-sm">Error: {error}</div>;
@@ -105,50 +137,105 @@ export default function Ledger({ filters = {} }) {
               {txns.map((tx) => {
                 const typeStyle = TYPE_STYLE[tx.type];
                 const catColor = tx.category ? catColors[tx.category] : null;
+                const isExpanded = expandedId === tx.id;
                 return (
-                  <tr
-                    key={tx.id}
-                    className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors"
-                  >
-                    <td className="px-6 py-2.5 text-gray-400 whitespace-nowrap">
-                      {formatDate(tx.date)}
-                    </td>
-                    <td className="pr-6 py-2.5 text-gray-200 max-w-sm">
-                      <span className="block truncate" title={tx.description}>
-                        {tx.description}
-                      </span>
-                    </td>
-                    <td
-                      className={`pr-6 py-2.5 text-right font-mono whitespace-nowrap ${
-                        tx.type === "debit" ? "text-red-400" : "text-green-400"
-                      }`}
+                  <Fragment key={tx.id}>
+                    <tr
+                      onClick={() => toggleExpand(tx)}
+                      className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors cursor-pointer"
                     >
-                      {formatAmount(tx.amount, tx.type)}
-                    </td>
-                    <td className="pr-6 py-2.5">
-                      {typeStyle && (
-                        <span
-                          className={`px-2 py-0.5 rounded text-xs font-medium ${typeStyle.bg} ${typeStyle.text}`}
-                        >
-                          {tx.type}
+                      <td className="px-6 py-2.5 text-gray-400 whitespace-nowrap">
+                        {formatDate(tx.date)}
+                      </td>
+                      <td className="pr-6 py-2.5 text-gray-200 max-w-sm">
+                        <span className="block truncate" title={tx.description}>
+                          {tx.description}
                         </span>
-                      )}
-                    </td>
-                    <td className="pr-6 py-2.5">
-                      {tx.category && (
-                        <span
-                          className="px-2 py-0.5 rounded text-xs font-medium"
-                          style={
-                            catColor
-                              ? { color: catColor, backgroundColor: catColor + "26" }
-                              : { color: "#9ca3af", backgroundColor: "#1f2937" }
-                          }
-                        >
-                          {tx.category}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
+                      </td>
+                      <td
+                        className={`pr-6 py-2.5 text-right font-mono whitespace-nowrap ${
+                          tx.type === "debit" ? "text-red-400" : "text-green-400"
+                        }`}
+                      >
+                        {formatAmount(tx.amount, tx.type)}
+                      </td>
+                      <td className="pr-6 py-2.5">
+                        {typeStyle && (
+                          <span
+                            className={`px-2 py-0.5 rounded text-xs font-medium ${typeStyle.bg} ${typeStyle.text}`}
+                          >
+                            {tx.type}
+                          </span>
+                        )}
+                      </td>
+                      <td className="pr-6 py-2.5">
+                        {tx.category && (
+                          <span
+                            className="px-2 py-0.5 rounded text-xs font-medium"
+                            style={
+                              catColor
+                                ? { color: catColor, backgroundColor: catColor + "26" }
+                                : { color: "#9ca3af", backgroundColor: "#1f2937" }
+                            }
+                          >
+                            {tx.category}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr className="border-b border-gray-800/50 bg-gray-900/50">
+                        <td colSpan={5} className="px-6 py-4">
+                          <div
+                            className="flex flex-wrap items-start gap-6 text-sm"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">Confidence</div>
+                              <div className="text-gray-300">
+                                {tx.confidence != null ? `${Math.round(tx.confidence * 100)}%` : "—"}
+                              </div>
+                            </div>
+                            {tx.notes && (
+                              <div className="max-w-md">
+                                <div className="text-xs text-gray-500 mb-1">AI notes</div>
+                                <div className="text-gray-300">{tx.notes}</div>
+                              </div>
+                            )}
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">Category</div>
+                              <div className="flex items-center gap-2">
+                                <select
+                                  value={editCategory}
+                                  onChange={(e) => setEditCategory(e.target.value)}
+                                  className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-gray-200 text-sm"
+                                >
+                                  {categories.map((c) => (
+                                    <option key={c.name} value={c.name}>
+                                      {c.name}
+                                    </option>
+                                  ))}
+                                </select>
+                                <button
+                                  onClick={() => saveCategory(tx)}
+                                  disabled={saving}
+                                  className="px-3 py-1 rounded bg-blue-700 hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-medium transition-colors"
+                                >
+                                  {saving ? "Saving…" : "Save"}
+                                </button>
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                Applies to this merchant everywhere in your ledger.
+                              </div>
+                              {saveError && (
+                                <div className="text-xs text-red-400 mt-1">{saveError}</div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 );
               })}
             </tbody>
