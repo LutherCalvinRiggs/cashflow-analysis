@@ -16,7 +16,7 @@ Build the full cashflow-analysis application across 5 phases per docs/PLAN.md.
 - [x] **0.2** Initialize frontend
   - Vite + React scaffold in `frontend/`
   - Tailwind configured
-  - `vite.config.js` — proxy `/api` to `http://localhost:8000`
+  - `vite.config.js` — proxy `/api` to `http://localhost:8787`
   - `App.jsx` — placeholder layout: sidebar + main content + chat panel
 
 - [x] **0.3** Initialize database
@@ -35,31 +35,31 @@ Build the full cashflow-analysis application across 5 phases per docs/PLAN.md.
   - Extract text page by page, return `{ pages: [...], full_text: "..." }`
   - Handle corrupt/unreadable PDFs gracefully — log error, return empty result with warning
 
-- [ ] **1.2** AI client wrapper
+- [x] **1.2** AI client wrapper
   - `backend/services/ai_client.py` — single function `complete(system_prompt, user_prompt) -> str`
   - Reads `AI_PROVIDER`, `AI_MODEL`, `AI_BASE_URL`, `ANTHROPIC_API_KEY` from config
   - Anthropic branch: uses `anthropic.Anthropic` client
   - OpenAI branch: uses `openai.OpenAI` client with optional base_url override
   - No provider-specific types leak out of this file
 
-- [ ] **1.3** AI extraction endpoint
+- [x] **1.3** AI extraction endpoint
   - `backend/routes/upload.py` — `POST /api/upload` accepts multipart PDF
   - Calls pdf_extractor → ai_client with EXTRACTION prompt from `docs/PROMPTS.md`
   - Parses AI JSON response, writes to `statements` + `transactions` tables
   - Calls categorizer on extracted transactions (task 1.4 dependency)
   - Returns `{ statement_id, transaction_count, warnings: [] }`
 
-- [ ] **1.4** Categorization service
+- [x] **1.4** Categorization service
   - `backend/services/categorizer.py` — takes list of transactions, calls AI with CATEGORIZATION prompt
   - Loads category list from `categories` table (seeded from `docs/CATEGORIES.md`)
   - Seeds `categories` table on first call if empty
   - Returns transactions with `category`, `category_confidence`, `notes` populated
 
-- [ ] **1.5** Backend tests — extraction + categorization
+- [~] **1.5** Backend tests — partial: categorization, PII filter, transactions API covered; `test_extraction.py` still missing
   - `backend/tests/test_extraction.py` — mock ai_client, test JSON parsing, bad PDF handling
   - `backend/tests/test_categorization.py` — mock ai_client, test category assignment logic
 
-- [ ] **1.6** Upload UI
+- [x] **1.6** Upload UI
   - `frontend/src/components/UploadPanel.jsx` — drag-and-drop + file picker, PDF only
   - Shows upload progress, extraction result summary (transaction count, warnings)
   - Calls `POST /api/upload` via `api/client.js`
@@ -69,23 +69,23 @@ Build the full cashflow-analysis application across 5 phases per docs/PLAN.md.
 ## Phase 2 — Ledger + Filters
 *Goal: View all transactions in a filterable table.*
 
-- [ ] **2.1** Transactions API
+- [x] **2.1** Transactions API
   - `backend/routes/transactions.py` — `GET /api/transactions`
   - Query params: `category`, `account`, `date_from`, `date_to`, `type`, `page`, `limit`
   - Returns `{ transactions: [...], total: N, page: N, limit: N }`
 
-- [ ] **2.2** Categories API
+- [x] **2.2** Categories API
   - `backend/routes/transactions.py` — `GET /api/categories`
   - Returns full category list with name, description, color
   - Seeds from `docs/CATEGORIES.md` on first call if table is empty
 
-- [ ] **2.3** Ledger component
+- [x] **2.3** Ledger component
   - `frontend/src/components/Ledger.jsx` — table: date | description | amount | type | category
   - Most recent first; credits green, debits red
   - Click row to expand — shows AI notes and category confidence
   - Pagination controls
 
-- [ ] **2.4** Filter bar
+- [x] **2.4** Filter bar
   - `frontend/src/components/FilterBar.jsx` — dropdowns: category, account, type; date range pickers
   - Filters apply immediately on change, update ledger
 
