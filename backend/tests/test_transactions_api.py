@@ -32,6 +32,8 @@ def setup_db():
     db = TestSession()
     db.add(Category(name="Groceries", description="Grocery stores", color="#22c55e"))
     db.add(Category(name="Utilities", description="Utilities", color="#3b82f6"))
+    db.add(Category(name="Childcare", description="Childcare", color="#a855f7"))
+    db.add(Category(name="Internal Transfer", description="Internal transfer", color="#64748b"))
     for i in range(5):
         db.add(Transaction(
             statement_id=1,
@@ -108,3 +110,97 @@ def test_list_categories():
     names = [c["name"] for c in r.json()]
     assert "Groceries" in names
     assert "Utilities" in names
+
+
+def test_update_category_persists_and_returns_pattern():
+    r = client.get("/api/transactions?category=Groceries")
+    tx_id = r.json()["items"][0]["id"]
+
+    r = client.patch(f"/api/transactions/{tx_id}/category", json={"category": "Utilities"})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["category"] == "Utilities"
+    assert body["updated_count"] >= 1
+
+    r = client.get(f"/api/transactions?category=Utilities")
+    assert any(tx["id"] == tx_id for tx in r.json()["items"])
+
+
+def test_update_category_applies_retroactively_to_matching_merchant():
+    db = TestSession()
+    db.add(Transaction(
+        statement_id=1, date="2026-06-01", description="MERCHANT 0",
+        amount=25.0, type="debit", category="Groceries",
+    ))
+    db.commit()
+    db.close()
+
+    r = client.get("/api/transactions?category=Groceries")
+    target = next(tx for tx in r.json()["items"] if tx["description"] == "MERCHANT 0")
+
+    r = client.patch(f"/api/transactions/{target['id']}/category", json={"category": "Utilities"})
+    assert r.status_code == 200
+    assert r.json()["updated_count"] == 2  # both "MERCHANT 0" rows
+
+    r = client.get("/api/transactions?category=Utilities")
+    merchant_0_rows = [tx for tx in r.json()["items"] if tx["description"] == "MERCHANT 0"]
+    assert len(merchant_0_rows) == 2
+
+
+def test_update_category_reaches_siblings_with_unique_reference_numbers():
+    """Regression test: descriptions carry unique trailing reference numbers and the AI's
+    suggested_key drops filler words (e.g. "To"), so a naive re-normalize-and-substring-match
+    approach only updates the one clicked row. All siblings sharing the merchant must update.
+    """
+    from database import MerchantMap
+
+    db = TestSession()
+    db.add(MerchantMap(
+        pattern="zelle payment luther", display_name="Zelle Payment To Luther LLC",
+        category="Childcare", confidence=0.6, source="ai",
+    ))
+    db.add(Transaction(
+        statement_id=1, date="2026-06-01", description="Zelle Payment To Luther LLC 22989085846",
+        amount=125.0, type="debit", category="Childcare", confidence=0.6,
+    ))
+    db.add(Transaction(
+        statement_id=1, date="2026-06-08", description="Zelle Payment To Luther LLC 23066645823",
+        amount=125.0, type="debit", category="Childcare", confidence=0.6,
+    ))
+    db.commit()
+    db.close()
+
+    r = client.get("/api/transactions?category=Childcare")
+    items = r.json()["items"]
+    assert len(items) == 2
+    target_id = items[0]["id"]
+
+    r = client.patch(f"/api/transactions/{target_id}/category", json={"category": "Internal Transfer"})
+    assert r.status_code == 200
+    assert r.json()["updated_count"] == 2
+    assert r.json()["pattern"] == "zelle payment luther"  # reused, not a new per-transaction pattern
+
+    r = client.get("/api/transactions?category=Internal Transfer")
+    assert len(r.json()["items"]) == 2
+
+    r = client.get("/api/transactions?category=Childcare")
+    assert len(r.json()["items"]) == 0
+
+    db = TestSession()
+    entries = db.query(MerchantMap).filter(MerchantMap.pattern == "zelle payment luther").all()
+    assert len(entries) == 1  # updated in place, not duplicated
+    assert entries[0].category == "Internal Transfer"
+    assert entries[0].source == "user"
+    db.close()
+
+
+def test_update_category_unknown_transaction_404():
+    r = client.patch("/api/transactions/9999/category", json={"category": "Utilities"})
+    assert r.status_code == 404
+
+
+def test_update_category_unknown_category_400():
+    r = client.get("/api/transactions?category=Groceries")
+    tx_id = r.json()["items"][0]["id"]
+    r = client.patch(f"/api/transactions/{tx_id}/category", json={"category": "Not A Real Category"})
+    assert r.status_code == 400

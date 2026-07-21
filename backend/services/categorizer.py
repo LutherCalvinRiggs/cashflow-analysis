@@ -83,7 +83,7 @@ def _categorize_batch(
         tx.notes = item.get("notes")
 
         suggested_key = item.get("suggested_key")
-        entry = upsert_entry(
+        _, created = upsert_entry(
             description=tx.description,
             suggested_key=suggested_key,
             category=category,
@@ -91,7 +91,7 @@ def _categorize_batch(
             source="ai",
             db=db,
         )
-        if entry not in db:
+        if created:
             new_entries += 1
 
     return new_entries

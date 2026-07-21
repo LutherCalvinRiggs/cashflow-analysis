@@ -40,3 +40,13 @@ class CategoryOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class CategoryUpdate(BaseModel):
+    category: str
+
+
+class CategoryUpdateResponse(BaseModel):
+    updated_count: int
+    category: str
+    pattern: str

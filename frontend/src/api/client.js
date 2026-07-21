@@ -37,4 +37,12 @@ export function uploadStatement(file, onProgress) {
   });
 }
 
+export function updateTransactionCategory(id, category) {
+  return request(`/transactions/${id}/category`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ category }),
+  });
+}
+
 export const api = { request };

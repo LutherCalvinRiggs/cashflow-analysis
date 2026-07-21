@@ -8,7 +8,13 @@ from sqlalchemy.orm import sessionmaker
 
 from database import Base, Category, MerchantMap, Transaction
 from services.categorizer import BATCH_SIZE, categorize
-from services.merchant_mapper import apply_map, normalize, upsert_entry
+from services.merchant_mapper import (
+    apply_map,
+    find_matching_transactions,
+    find_related_entry,
+    normalize,
+    upsert_entry,
+)
 
 
 # ── In-memory DB fixture ───────────────────────────────────────────────────────
@@ -118,6 +124,39 @@ def test_upsert_ai_does_not_downgrade_user(db):
     stored = db.query(MerchantMap).filter(MerchantMap.pattern == "foodcellar lic").first()
     assert stored.category == "Groceries"
     assert stored.source == "user"
+
+
+# ── find_related_entry() / find_matching_transactions() ──────────────────────
+#
+# Real-world bank descriptions carry unique trailing reference numbers, and the AI's
+# suggested_key often drops filler words (e.g. "to"), so plain substring matching between
+# a stored pattern and a transaction's normalized description frequently fails even though
+# both describe the same merchant. These matchers use word-subset comparison instead.
+
+def test_find_related_entry_matches_despite_filler_word_and_trailing_id(db):
+    upsert_entry("Zelle Payment To Luther LLC 22989085846", "zelle payment luther", "Childcare", 0.6, "ai", db)
+    db.commit()
+
+    entry = find_related_entry("Zelle Payment To Luther LLC 99999999999", db)
+    assert entry is not None
+    assert entry.pattern == "zelle payment luther"
+
+
+def test_find_related_entry_returns_none_when_no_word_subset_match(db):
+    upsert_entry("Zelle Payment To Luther LLC 22989085846", "zelle payment luther", "Childcare", 0.6, "ai", db)
+    db.commit()
+
+    assert find_related_entry("Whole Foods Market", db) is None
+
+
+def test_find_matching_transactions_covers_all_reference_number_variants(db):
+    _make_transaction(db, description="Zelle Payment To Luther LLC 22989085846")
+    _make_transaction(db, description="Zelle Payment To Luther LLC 23066645823")
+    _make_transaction(db, description="Whole Foods Market")
+
+    matches = find_matching_transactions("zelle payment luther", db)
+    assert len(matches) == 2
+    assert all("Zelle Payment To Luther LLC" in tx.description for tx in matches)
 
 
 # ── categorize() — map hit path (no AI call) ──────────────────────────────────

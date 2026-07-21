@@ -35,6 +35,45 @@ def lookup(description: str, db: Session) -> MerchantMap | None:
     return None
 
 
+def find_related_entry(description: str, db: Session) -> MerchantMap | None:
+    """Find an existing MerchantMap entry whose pattern's words all appear in this description.
+
+    More lenient than lookup()'s substring match: bank descriptions commonly interleave
+    filler words (e.g. "Zelle Payment To Luther LLC" vs. the AI's suggested_key "zelle
+    payment luther") and unique trailing reference numbers. Used when a user edits a
+    category so the edit reuses the merchant's existing canonical pattern instead of
+    creating a new one keyed to this single transaction's unique reference number.
+    """
+    key_words = set(normalize(description).split())
+    if not key_words:
+        return None
+    best = None
+    for entry in db.query(MerchantMap).all():
+        pattern_words = set(entry.pattern.split()) if entry.pattern else set()
+        if pattern_words and pattern_words.issubset(key_words):
+            if best is None or len(pattern_words) > len(best.pattern.split()):
+                best = entry  # prefer the most specific (longest) matching pattern
+    return best
+
+
+def find_matching_transactions(pattern: str, db: Session) -> list[Transaction]:
+    """Return all transactions whose normalized description contains every word in this pattern.
+
+    Word-subset match (see find_related_entry) rather than substring containment, so a
+    merchant-level category edit reaches every transaction from that merchant, not just
+    ones whose description happens to contain the pattern as a contiguous substring.
+    """
+    pattern_words = set(pattern.split())
+    if not pattern_words:
+        return []
+    matches = []
+    for tx in db.query(Transaction).all():
+        key_words = set(normalize(tx.description).split())
+        if pattern_words.issubset(key_words):
+            matches.append(tx)
+    return matches
+
+
 def apply_map(transactions: list[Transaction], db: Session) -> tuple[list[Transaction], list[Transaction]]:
     """Split transactions into (mapped, unmapped).
 
@@ -60,8 +99,11 @@ def upsert_entry(
     confidence: float,
     source: str,
     db: Session,
-) -> MerchantMap:
-    """Create or update a MerchantMap entry. Uses suggested_key if provided, else normalizes description."""
+) -> tuple[MerchantMap, bool]:
+    """Create or update a MerchantMap entry. Uses suggested_key if provided, else normalizes description.
+
+    Returns (entry, created) — created is True only when a new row was inserted.
+    """
     pattern = (suggested_key or "").strip().lower() or normalize(description)
     if not pattern:
         pattern = normalize(description)
@@ -74,7 +116,7 @@ def upsert_entry(
             existing.confidence = confidence
             existing.source = source
             existing.display_name = description
-        return existing
+        return existing, False
 
     entry = MerchantMap(
         pattern=pattern,
@@ -84,4 +126,5 @@ def upsert_entry(
         source=source,
     )
     db.add(entry)
-    return entry
+    db.flush()  # make visible to subsequent lookups in this batch (session is autoflush=False)
+    return entry, True
