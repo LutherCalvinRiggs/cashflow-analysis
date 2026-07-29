@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 cd backend
 pip install -r requirements.txt
-python main.py                  # starts FastAPI on localhost:8000
+python main.py                  # starts FastAPI on localhost:8787
 pytest tests/                   # run all tests
 pytest tests/test_extraction.py # run a single test file
 ```
@@ -21,7 +21,7 @@ npm run dev     # starts Vite dev server on localhost:5173, proxied to backend
 npm run build
 ```
 
-The Vite dev server proxies `/api` to `http://localhost:8000`. Both servers must be running during development.
+The Vite dev server proxies `/api` to `http://localhost:8787`. Both servers must be running during development.
 
 **Environment**: Copy `.env.example` to `.env` and fill in:
 - `ANTHROPIC_API_KEY` (or OpenAI key)
@@ -77,7 +77,9 @@ Never commit, push, or create a PR without going through these gates first.
 
 ## After every commit
 
-After every commit and push, output this exact block:
+After every commit and push:
+
+1. Output this exact block:
 
 ```
 Building in Public - Commit #${commit_number}:
@@ -90,6 +92,10 @@ ${commit_url}
 - `commit_number` — total commit count: `git rev-list --count HEAD`
 - `concise_one_liner_desc_of_commit` — plain English, no conventional commit prefix
 - `commit_url` — `https://github.com/LutherCalvinRiggs/cashflow-analysis/commit/<sha>`
+
+2. Run `/bip` to generate a LinkedIn draft for the commit.
+   - Run for every commit regardless of type prefix
+   - Draft is saved to `drafts/` (gitignored) and printed inline
 
 ## Development conventions
 

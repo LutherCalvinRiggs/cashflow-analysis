@@ -5,6 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from database import engine, init_db
+from routes.transactions import router as transactions_router
+from routes.upload import router as upload_router
 
 
 @asynccontextmanager
@@ -22,6 +24,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(upload_router)
+app.include_router(transactions_router)
+
 
 @app.get("/health")
 def health():
@@ -32,4 +37,4 @@ def health():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8787, reload=True)

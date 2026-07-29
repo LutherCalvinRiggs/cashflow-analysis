@@ -1,19 +1,54 @@
+import { useState } from "react";
+import FilterBar from "./components/FilterBar";
+import Ledger from "./components/Ledger";
+import UploadPanel from "./components/UploadPanel";
+
+const NAV = [
+  { id: "ledger", label: "Ledger" },
+  { id: "charts", label: "Charts" },
+  { id: "upload", label: "Upload" },
+];
+
 export default function App() {
+  const [view, setView] = useState("upload");
+  const [ledgerFilters, setLedgerFilters] = useState({});
+
   return (
     <div className="flex h-screen bg-gray-950 text-gray-100">
       {/* Sidebar */}
       <aside className="w-56 shrink-0 bg-gray-900 border-r border-gray-800 p-4">
         <h1 className="text-lg font-semibold text-white mb-6">cashflow</h1>
-        <nav className="space-y-1 text-sm text-gray-400">
-          <div className="px-2 py-1 rounded hover:bg-gray-800 cursor-pointer">Ledger</div>
-          <div className="px-2 py-1 rounded hover:bg-gray-800 cursor-pointer">Charts</div>
-          <div className="px-2 py-1 rounded hover:bg-gray-800 cursor-pointer">Upload</div>
+        <nav className="space-y-1 text-sm">
+          {NAV.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setView(item.id)}
+              className={`w-full text-left px-2 py-1 rounded transition-colors ${
+                view === item.id
+                  ? "bg-gray-800 text-white"
+                  : "text-gray-400 hover:bg-gray-800 hover:text-gray-200"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
         </nav>
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto p-6">
-        <p className="text-gray-500 text-sm">Main content area</p>
+      <main className="flex-1 flex flex-col overflow-hidden">
+        {view === "upload" && <UploadPanel />}
+        {view === "ledger" && (
+          <>
+            <FilterBar filters={ledgerFilters} onChange={setLedgerFilters} />
+            <div className="flex-1 min-h-0">
+              <Ledger filters={ledgerFilters} />
+            </div>
+          </>
+        )}
+        {view === "charts" && (
+          <div className="flex-1 p-6 text-gray-500 text-sm">Charts coming in Phase 3</div>
+        )}
       </main>
 
       {/* Chat panel */}
@@ -26,5 +61,5 @@ export default function App() {
         />
       </aside>
     </div>
-  )
+  );
 }

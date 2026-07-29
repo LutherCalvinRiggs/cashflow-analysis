@@ -5,7 +5,8 @@
 ### Route handlers
 - Thin handlers: validate input with Pydantic, call a service function, return result
 - No business logic in `routes/` — that belongs in `services/`
-- Use `HTTPException` for client errors; let unexpected exceptions propagate to FastAPI's default handler
+- Use `HTTPException` for client errors
+- For calls to external services (AI providers, etc.), always catch broadly and re-raise as `HTTPException` with a JSON-safe detail — FastAPI's default handler returns plain text, which breaks any frontend expecting JSON error bodies
 
 ### Services
 - Each service function does one thing
@@ -16,6 +17,8 @@
 - All DB access goes through SQLAlchemy session
 - Use `try/finally` to close sessions — never leave them open
 - Fetch in bulk, process in memory — never query inside a loop
+- When a loop may insert rows that later iterations need to see (e.g. dedup-by-pattern), either flush after each insert or track seen keys in a local set/dict — don't rely on a fresh query per iteration to reflect uncommitted writes
+- Never infer row-creation status from ORM session-membership checks (`obj in session`). Have upsert-style functions return an explicit `(entry, created: bool)`
 
 ### AI client
 - `services/ai_client.py` exposes only `complete(system_prompt, user_prompt) -> str`
