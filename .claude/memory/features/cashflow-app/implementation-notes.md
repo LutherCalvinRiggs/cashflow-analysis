@@ -17,6 +17,9 @@ After each commit, a "Building in Public" block is manually copy-pasted to Linke
 - **Merchant matching must use word-subset comparison, not substring containment** — the AI's `suggested_key` often drops filler words (e.g. "Zelle Payment **To** Jane Doe LLC" → key "zelle payment jane doe"), so `"pattern" in key` fails even though they're the same merchant. `find_related_entry` / `find_matching_transactions` compare word sets instead.
 - Unplanned services added: `pii_filter.py` (PII redaction before AI), `merchant_mapper.py` (merchant map + batched AI fallback in categorizer), `prompt_loader.py`.
 
+## Dev server instability — needs debugging (2026-07-28, deferred by Luther)
+Starting `npm run start` found port 8787 and 5173 **already bound by orphaned processes** from an earlier, untracked session (found via `lsof -nP -iTCP:<port> -sTCP:LISTEN`, not visible via a plain `ps`/`lsof` glance). The new `start:api` failed immediately with `[Errno 48] Address already in use`; `concurrently -k` then killed the new (healthy) frontend process too, while a *stale* frontend from the earlier session kept serving on 5173 in a broken state — Vite's `node_modules/.vite/deps` cache appears to have been corrupted by two concurrent optimizer runs writing to it at once, leaving `react.js`, `react-dom_client.js`, and `react_jsx-dev-runtime.js` all returning `503` and the page rendering blank with zero console errors (the failure was silent — only visible via `read_network_requests`, not `read_console_messages`). Fixed for this session by killing the orphaned PIDs, deleting `frontend/node_modules/.vite`, and restarting clean — but **root cause of why stale servers were still running/bound is unconfirmed**. Luther wants this debugged properly in a future session, not patched around again.
+
 ---
 
 ## SQLite in-memory tests need StaticPool (2026-07-12)

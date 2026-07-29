@@ -19,7 +19,7 @@
 - [x] 1.3 Repeat via the file-picker (not drag-and-drop) with the second statement
 - [x] 1.4 Spot-check accuracy: pick 5 transactions from the source PDF, confirm each appears in the ledger with correct **date, description, amount, and debit/credit direction**
 - [x] 1.5 Spot-check categorization: are the AI-assigned categories sensible for ~10 transactions? Note any misfires (feeds the prompt-tuning loop, not pass/fail)
-- [ ] 1.6 PII check: expand a few rows / inspect the DB (`sqlite3 backend/cashflow.db 'select description from transactions limit 20;'`) — no full account numbers, card numbers, routing numbers, or SSNs should appear
+- [~] 1.6 PII check: **investigated 2026-07-28.** Found real PII in descriptions (reference numbers, an ATM street address) and separately in `statements.raw_text` (full account numbers, name, address stored unredacted at rest). Both fixed in `pii_filter.py` / `upload.py` — see decisions.md 2026-07-28. Old test data purged; **pending Luther's re-upload of the 2 source PDFs to confirm the fix live in the ledger** before checking this off
 
 ## 2. Upload — edge cases
 - [ ] 2.1 Non-PDF file: picker should refuse it, or the API should reject it with a user-facing error — not a stack trace
