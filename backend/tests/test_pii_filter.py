@@ -82,8 +82,8 @@ def test_redacts_labeled_transaction_number():
     assert redact("Transaction#: 84719203561") == "Transaction#: [REF]"
 
 def test_redacts_ppd_id():
-    assert redact("Mac Discount LLC Direct Dep PPD ID: 10293847561") == \
-        "Mac Discount LLC Direct Dep PPD ID: [REF]"
+    assert redact("Acme Payroll LLC Direct Dep PPD ID: 10293847561") == \
+        "Acme Payroll LLC Direct Dep PPD ID: [REF]"
 
 def test_redacts_bare_long_digit_run():
     # Zelle-style trailing reference number with no label at all
@@ -101,7 +101,7 @@ def test_preserves_masked_account_fragment_in_description():
 # ── Street addresses ──────────────────────────────────────────────────────────
 
 def test_redacts_atm_street_address():
-    result = redact("Non-Chase ATM Withdraw 01/04 100 Main St Long Island C NY Card 0352")
+    result = redact("Non-Chase ATM Withdraw 01/04 100 Main St Anytown NY Card 0352")
     assert "100 Main St" not in result
     assert "[ADDRESS]" in result
     assert "Card 0352" in result  # already-masked card fragment untouched
