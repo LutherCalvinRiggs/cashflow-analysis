@@ -1,5 +1,6 @@
 """
-PII redaction for bank statement text before it is sent to the AI provider.
+PII redaction for bank statement text before it is sent to the AI provider
+or persisted to the local database.
 
 WHAT IS CAUGHT
 --------------
@@ -9,14 +10,24 @@ WHAT IS CAUGHT
 - Routing / transit / ABA numbers with a label → replaced with [ROUTING]
 - Card numbers in grouped 4×4 format (spaces or dashes) → ****last4
 - SSNs in NNN-NN-NNNN or NNN NN NNNN format → [REDACTED]
+- Labeled transaction/reference numbers: "Transaction#:", "Trans ID:",
+  "Conf#:", "PPD ID:", etc. → [REF]
+- Bare long digit runs (8+ consecutive digits) left over after the above —
+  catches unlabeled Zelle/ACH/wire reference numbers embedded directly in
+  transaction descriptions (e.g. "Zelle Payment To Jane Doe 90123456789")
+  → [REF]. Already-masked fragments like "...1198" or "Card 0352" are
+  untouched since they're under 8 digits.
+- Common US street addresses embedded in a description (e.g. ATM location
+  lines like "100 Main St") → [ADDRESS]. Heuristic match on
+  "<number> <words> <street suffix>"; city/state that follows is not
+  caught.
 
 KNOWN GAPS (conservative by design)
 ------------------------------------
 - Unlabeled account numbers: if a statement prints the account number in a
   header block without a recognizable label, it will NOT be caught.
-- Account numbers inside transaction descriptions: e.g. "TRANSFER TO ACCT
-  483920173627" is intentionally left alone to avoid clobbering reference IDs.
 - Non-US formats: IBANs, UK sort codes, Australian BSBs are not caught.
+- Addresses without a recognized street suffix, or non-US address formats.
 If full privacy is required, point AI_BASE_URL at a local model (Ollama, LM
 Studio, etc.) so no text leaves the machine at all.
 """
@@ -55,6 +66,30 @@ _SSN_RE = re.compile(
     r"\b\d{3}[\s\-]\d{2}[\s\-]\d{4}\b",
 )
 
+# Labeled transaction/reference number: "Transaction#: 84719203561",
+# "PPD ID: 10293847561", "Conf#: 12345678" → "[REF]"
+_REF_RE = re.compile(
+    r"((?:transaction|trans|conf|confirmation|ppd|ref|reference)\.?\s*"
+    r"(?:id|number|num|no\.?|#)?\s*[:\-]?\s*)(\d{5,})",
+    re.IGNORECASE,
+)
+
+# Street address embedded in a description, e.g. an ATM location line:
+# "100 Main St" → "[ADDRESS]". Street number + 1-4 words + a common
+# street suffix; the trailing city/state is intentionally left alone.
+_ADDRESS_RE = re.compile(
+    r"(?<![\d/\-])\b\d{1,6}\s+[A-Za-z0-9.]+(?:\s+[A-Za-z0-9.]+){0,3}?\s+"
+    r"(?:Blvd|Boulevard|Ave|Avenue|St|Street|Rd|Road|Dr|Drive|Ln|Lane|"
+    r"Way|Ct|Court|Pl|Place|Cir|Circle|Pkwy|Parkway|Hwy|Highway)\b\.?",
+    re.IGNORECASE,
+)
+
+# Bare long digit runs left over after every labeled pattern above has run —
+# catches unlabeled P2P/ACH reference numbers (e.g. Zelle's trailing
+# transaction ID). 8+ digits distinguishes these from check numbers and
+# short reference codes, which are typically <=7 digits.
+_LONG_DIGIT_RUN_RE = re.compile(r"\b\d{8,}\b")
+
 
 def redact(text: str) -> str:
     """Remove common PII patterns from bank statement text before sending to the AI.
@@ -77,5 +112,14 @@ def redact(text: str) -> str:
 
     # SSNs — no useful digits to preserve
     text = _SSN_RE.sub("[REDACTED]", text)
+
+    # Street addresses embedded in descriptions (e.g. ATM location lines)
+    text = _ADDRESS_RE.sub("[ADDRESS]", text)
+
+    # Labeled transaction/reference numbers — no useful digits to preserve
+    text = _REF_RE.sub(lambda m: f"{m.group(1)}[REF]", text)
+
+    # Any remaining bare long digit runs (unlabeled P2P/ACH reference numbers)
+    text = _LONG_DIGIT_RUN_RE.sub("[REF]", text)
 
     return text

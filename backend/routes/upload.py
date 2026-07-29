@@ -78,7 +78,7 @@ async def upload_statement(file: UploadFile, db: Session = Depends(get_db)):
         statement_month=statement_month,
         account_last4=ai_data.get("account_last4"),
         account_type=ai_data.get("account_type"),
-        raw_text=full_text,
+        raw_text=redacted_text,
     )
     db.add(statement)
     db.flush()  # get statement.id before committing
