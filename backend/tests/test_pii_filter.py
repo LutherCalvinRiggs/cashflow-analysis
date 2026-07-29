@@ -23,8 +23,9 @@ def test_redacts_member_number():
 def test_redacts_member_no():
     assert redact("Member No: 123456789") == "Member No: ****6789"
 
-def test_does_not_redact_unlabeled_digit_sequence():
-    # Transaction reference IDs should be left alone
+def test_does_not_redact_short_unlabeled_digit_sequence():
+    # Short reference numbers (<=7 digits) are below the bare-digit-run
+    # threshold and should be left alone
     assert redact("CHECK 1001 09/15") == "CHECK 1001 09/15"
     assert redact("ACH 4839201 PAYMENT") == "ACH 4839201 PAYMENT"
 
@@ -40,9 +41,8 @@ def test_redacts_transit_number():
 def test_redacts_aba_number():
     assert redact("ABA: 021000021") == "ABA: [ROUTING]"
 
-def test_does_not_redact_unlabeled_9_digit_sequence():
-    # A transaction amount or reference that happens to be 9 digits
-    assert redact("Ref 123456789") == "Ref 123456789"
+def test_redacts_labeled_9_digit_reference():
+    assert redact("Ref 123456789") == "Ref [REF]"
 
 
 # ── Card numbers ──────────────────────────────────────────────────────────────
@@ -74,6 +74,37 @@ def test_redacts_ssn_dashes():
 
 def test_redacts_ssn_spaces():
     assert redact("123 45 6789") == "[REDACTED]"
+
+
+# ── Transaction/reference numbers ─────────────────────────────────────────────
+
+def test_redacts_labeled_transaction_number():
+    assert redact("Transaction#: 22990339876") == "Transaction#: [REF]"
+
+def test_redacts_ppd_id():
+    assert redact("Mac Discount LLC Direct Dep PPD ID: 9111111103") == \
+        "Mac Discount LLC Direct Dep PPD ID: [REF]"
+
+def test_redacts_bare_long_digit_run():
+    # Zelle-style trailing reference number with no label at all
+    assert redact("Zelle Payment To Jane Doe 22989085846") == \
+        "Zelle Payment To Jane Doe [REF]"
+
+def test_preserves_masked_account_fragment_in_description():
+    # Bank-masked fragments (already <=4 digits) should not be touched
+    result = redact("Online Transfer To Chk ...1198 Transaction#: 22990339876")
+    assert "...1198" in result
+    assert "22990339876" not in result
+    assert "[REF]" in result
+
+
+# ── Street addresses ──────────────────────────────────────────────────────────
+
+def test_redacts_atm_street_address():
+    result = redact("Non-Chase ATM Withdraw 01/04 4445 Vernon Blvd Long Island C NY Card 0352")
+    assert "4445 Vernon Blvd" not in result
+    assert "[ADDRESS]" in result
+    assert "Card 0352" in result  # already-masked card fragment untouched
 
 
 # ── Multiple patterns in one block of text ────────────────────────────────────
