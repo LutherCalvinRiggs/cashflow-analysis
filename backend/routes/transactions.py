@@ -14,8 +14,11 @@ def list_transactions(
     type: str | None = Query(None, pattern="^(debit|credit)$"),
     date_from: str | None = Query(None, description="YYYY-MM-DD"),
     date_to: str | None = Query(None, description="YYYY-MM-DD"),
+    year: str | None = Query(None, pattern="^\\d{4}$"),
+    month: str | None = Query(None, pattern="^\\d{2}$"),
     statement_id: int | None = Query(None),
     exclude_transfers: bool = Query(False),
+    sort: str = Query("desc", pattern="^(asc|desc)$"),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
@@ -30,14 +33,19 @@ def list_transactions(
         q = q.filter(Transaction.date >= date_from)
     if date_to:
         q = q.filter(Transaction.date <= date_to)
+    if year and month:
+        q = q.filter(Transaction.date.like(f"{year}-{month}-%"))
+    elif year:
+        q = q.filter(Transaction.date.like(f"{year}-%"))
     if statement_id:
         q = q.filter(Transaction.statement_id == statement_id)
     if exclude_transfers:
         q = q.filter(Transaction.is_internal_transfer == 0)
 
     total = q.count()
+    order = (Transaction.date.asc(), Transaction.id.asc()) if sort == "asc" else (Transaction.date.desc(), Transaction.id.desc())
     items = (
-        q.order_by(Transaction.date.desc(), Transaction.id.desc())
+        q.order_by(*order)
         .offset((page - 1) * page_size)
         .limit(page_size)
         .all()
@@ -59,6 +67,16 @@ def list_transactions(
         page_size=page_size,
         pages=pages,
     )
+
+
+@router.get("/transactions/periods", response_model=list[str])
+def list_transaction_periods(db: Session = Depends(get_db)):
+    """Distinct YYYY-MM periods with at least one transaction, most recent first.
+
+    Used to populate the ledger's year/month filters with only real options.
+    """
+    dates = [d for (d,) in db.query(Transaction.date).distinct().all() if d and len(d) >= 7]
+    return sorted({d[:7] for d in dates}, reverse=True)
 
 
 @router.get("/categories", response_model=list[CategoryOut])

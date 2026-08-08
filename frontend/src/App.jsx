@@ -37,7 +37,7 @@ export default function App() {
 
       {/* Main content */}
       <main className="flex-1 flex flex-col overflow-hidden">
-        {view === "upload" && <UploadPanel />}
+        {view === "upload" && <UploadPanel onViewLedger={() => setView("ledger")} />}
         {view === "ledger" && (
           <>
             <FilterBar filters={ledgerFilters} onChange={setLedgerFilters} />

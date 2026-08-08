@@ -25,12 +25,12 @@ function formatAmount(amount, type) {
   return type === "debit" ? `-$${s}` : `+$${s}`;
 }
 
-function buildQuery(filters, page) {
-  const params = new URLSearchParams({ page, page_size: PAGE_SIZE });
+function buildQuery(filters, page, sort) {
+  const params = new URLSearchParams({ page, page_size: PAGE_SIZE, sort });
   if (filters.category) params.set("category", filters.category);
   if (filters.type) params.set("type", filters.type);
-  if (filters.date_from) params.set("date_from", filters.date_from);
-  if (filters.date_to) params.set("date_to", filters.date_to);
+  if (filters.year) params.set("year", filters.year);
+  if (filters.month) params.set("month", filters.month);
   if (filters.exclude_transfers) params.set("exclude_transfers", "true");
   return `/transactions?${params}`;
 }
@@ -41,6 +41,7 @@ export default function Ledger({ filters = {} }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
+  const [sort, setSort] = useState("desc");
   const [meta, setMeta] = useState({ total: 0, pages: 1 });
   const [expandedId, setExpandedId] = useState(null);
   const [editCategory, setEditCategory] = useState("");
@@ -64,18 +65,23 @@ export default function Ledger({ filters = {} }) {
     setLoading(true);
     setError(null);
     return api
-      .request(buildQuery(filters, page))
+      .request(buildQuery(filters, page, sort))
       .then((data) => {
         setTxns(data.items);
         setMeta({ total: data.total, pages: data.pages });
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [filters, page]);
+  }, [filters, page, sort]);
 
   useEffect(() => {
     loadTransactions();
   }, [loadTransactions]);
+
+  function toggleSort() {
+    setSort((s) => (s === "desc" ? "asc" : "desc"));
+    setPage(1);
+  }
 
   function toggleExpand(tx) {
     if (expandedId === tx.id) {
@@ -126,7 +132,16 @@ export default function Ledger({ filters = {} }) {
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="text-left text-gray-500 border-b border-gray-800 sticky top-0 bg-gray-950 z-10">
-                <th className="px-6 py-3 font-medium whitespace-nowrap">Date</th>
+                <th className="px-6 py-3 font-medium whitespace-nowrap">
+                  <button
+                    onClick={toggleSort}
+                    className="flex items-center gap-1 hover:text-gray-300 transition-colors"
+                    title={sort === "desc" ? "Newest first — click for oldest first" : "Oldest first — click for newest first"}
+                  >
+                    Date
+                    <span className="text-[10px]">{sort === "desc" ? "▼" : "▲"}</span>
+                  </button>
+                </th>
                 <th className="pr-6 py-3 font-medium">Description</th>
                 <th className="pr-6 py-3 font-medium text-right whitespace-nowrap">Amount</th>
                 <th className="pr-6 py-3 font-medium whitespace-nowrap">Type</th>
