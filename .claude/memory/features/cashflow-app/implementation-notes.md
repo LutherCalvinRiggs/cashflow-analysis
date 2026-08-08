@@ -1,5 +1,8 @@
 # Implementation Notes — cashflow-app
 
+## Sliding panel without reflow: fixed-width inner content + animated wrapper (2026-08-08)
+To slide the chat panel open/closed without its contents squishing mid-animation: the outer `<aside>` animates `width` between `w-0` and `w-80` (via `transition-all duration-300` + `overflow-hidden`), but the inner content div is hard-set to `w-80` regardless of the wrapper's current width. The wrapper clips it during the transition, so it reads as sliding into view at full width rather than stretching from nothing. Reusable pattern for any collapsible panel where the content shouldn't reflow while opening.
+
 ## LinkedIn Post Automation (2026-06-25)
 After each commit, a "Building in Public" block is manually copy-pasted to LinkedIn. This needs to be automated — likely via a GitHub Action that triggers on push to main and posts via the LinkedIn API. Requires a LinkedIn API token. Revisit after Phase 1 ships.
 

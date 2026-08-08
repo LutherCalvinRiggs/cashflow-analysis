@@ -51,8 +51,8 @@ Build the full cashflow-analysis application across 5 phases per docs/PLAN.md.
 
 - [x] **1.4** Categorization service + Upload UI
   - `backend/services/categorizer.py` + `merchant_mapper.py` — MerchantMap table, map-first lookup, batched AI (40/call)
-  - `backend/services/pii_filter.py` — always-on PII redaction before AI (account, routing, card, SSN)
-  - `frontend/src/components/UploadPanel.jsx` — 4-state machine, drag-and-drop, progress bar, result summary
+  - `backend/services/pii_filter.py` — audience-scoped PII redaction (identity fields always redacted pre-extraction; ref#/address redacted only for the categorization AI call, kept real in storage — redesigned 2026-08-08, see decisions.md)
+  - `frontend/src/components/UploadPanel.jsx` — rebuilt 2026-08-08 for multi-file batch upload (sequential, per-file status, continues past individual failures), "View Ledger" button + auto-redirect toggle (localStorage-persisted)
 
 - [~] **1.5** Backend tests — partial: categorization (12), PII filter (20), transactions API (8+) covered. `test_extraction.py` does **not** exist — confirmed by directory listing, not just a stale checkbox. AI JSON parsing (the most likely failure point per Risks below) has zero automated coverage. Tracked as TaskList #1.
 
@@ -73,12 +73,13 @@ Build the full cashflow-analysis application across 5 phases per docs/PLAN.md.
 
 - [x] **2.3** Ledger component
   - `frontend/src/components/Ledger.jsx` — date | description | amount | type | category
-  - Most recent first; debits red, credits green; category badge uses DB hex color
+  - Debits red, credits green; category badge uses DB hex color
   - Pagination controls (prev/next, hidden when ≤1 page)
   - Click row to expand — shows AI notes, confidence, and an editable category dropdown (added later, see addendum)
+  - Date-sort toggle added 2026-08-08 (▼/▲ on the Date header, default desc, resets to page 1 on flip)
 
 - [x] **2.4** Filter bar
-  - `frontend/src/components/FilterBar.jsx` — category dropdown, debit/credit/all toggle, date range, exclude-transfers
+  - `frontend/src/components/FilterBar.jsx` — redesigned 2026-08-08: category / year / month / type as a row of `<select>`s (year+month cascade, populated from new `GET /api/transactions/periods`), hide-transfers toggle last, right-aligned. Free-form date-range inputs dropped in favor of year/month.
   - Filter state lifted to App.jsx; "Clear filters" link when any filter active
 
 - [x] **2.5** useTransactions hook *(handled directly in Ledger.jsx — no separate hook needed)*
@@ -86,6 +87,11 @@ Build the full cashflow-analysis application across 5 phases per docs/PLAN.md.
 - [x] **2.6** Merchant category editing *(unplanned addition, shipped 2026-07-20)*
   - `PATCH /api/transactions/{id}/category` — validates category, persists as `source="user"` override (never downgraded by AI), applies retroactively to every transaction from that merchant via word-subset pattern matching
   - Ledger row expand UI: confidence, AI notes, editable category dropdown + Save
+
+- [x] **2.7** Chat panel relocated + toggle CTA *(unplanned, layout-only, shipped 2026-08-08)*
+  - `App.jsx` — chat panel moved from a fixed right-side aside to a collapsible panel between the nav sidebar and main content, toggled by an outlined CTA button under the nav links ("Ask your finances" / "Hide chat")
+  - Slides open to its original w-80 width via a width transition on the wrapper (inner content stays fixed-width so it doesn't reflow while animating); nav sidebar width unaffected either way
+  - Layout/shell only — actual chat functionality is still Phase 4, unbuilt; Luther will explore chat itself later
 
 ---
 
