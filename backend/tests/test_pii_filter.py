@@ -1,4 +1,4 @@
-from services.pii_filter import redact
+from services.pii_filter import redact, redact_transaction_text
 
 
 # ── Account numbers ───────────────────────────────────────────────────────────
@@ -41,9 +41,6 @@ def test_redacts_transit_number():
 def test_redacts_aba_number():
     assert redact("ABA: 021000021") == "ABA: [ROUTING]"
 
-def test_redacts_labeled_9_digit_reference():
-    assert redact("Ref 123456789") == "Ref [REF]"
-
 
 # ── Card numbers ──────────────────────────────────────────────────────────────
 
@@ -76,35 +73,21 @@ def test_redacts_ssn_spaces():
     assert redact("123 45 6789") == "[REDACTED]"
 
 
-# ── Transaction/reference numbers ─────────────────────────────────────────────
+# ── redact() no longer touches reference numbers or addresses ────────────────
+# These are preserved through extraction/storage on purpose — see
+# redact_transaction_text() below, which strips them only for the
+# categorization AI call.
 
-def test_redacts_labeled_transaction_number():
-    assert redact("Transaction#: 84719203561") == "Transaction#: [REF]"
+def test_redact_preserves_labeled_reference_number():
+    assert redact("Transaction#: 84719203561") == "Transaction#: 84719203561"
 
-def test_redacts_ppd_id():
-    assert redact("Acme Payroll LLC Direct Dep PPD ID: 10293847561") == \
-        "Acme Payroll LLC Direct Dep PPD ID: [REF]"
-
-def test_redacts_bare_long_digit_run():
-    # Zelle-style trailing reference number with no label at all
+def test_redact_preserves_bare_long_digit_run():
     assert redact("Zelle Payment To Jane Doe 90123456789") == \
-        "Zelle Payment To Jane Doe [REF]"
+        "Zelle Payment To Jane Doe 90123456789"
 
-def test_preserves_masked_account_fragment_in_description():
-    # Bank-masked fragments (already <=4 digits) should not be touched
-    result = redact("Online Transfer To Chk ...1198 Transaction#: 84719203561")
-    assert "...1198" in result
-    assert "84719203561" not in result
-    assert "[REF]" in result
-
-
-# ── Street addresses ──────────────────────────────────────────────────────────
-
-def test_redacts_atm_street_address():
+def test_redact_preserves_street_address():
     result = redact("Non-Chase ATM Withdraw 01/04 100 Main St Anytown NY Card 0352")
-    assert "100 Main St" not in result
-    assert "[ADDRESS]" in result
-    assert "Card 0352" in result  # already-masked card fragment untouched
+    assert "100 Main St" in result
 
 
 # ── Multiple patterns in one block of text ────────────────────────────────────
@@ -131,3 +114,37 @@ def test_transaction_rows_untouched():
         "01/17/2026  ACH DEPOSIT 4839201      500.00  1,688.57\n"
     )
     assert redact(transactions) == transactions
+
+
+# ── redact_transaction_text() — ref numbers ───────────────────────────────────
+
+def test_transaction_text_redacts_labeled_9_digit_reference():
+    assert redact_transaction_text("Ref 123456789") == "Ref [REF]"
+
+def test_transaction_text_redacts_labeled_transaction_number():
+    assert redact_transaction_text("Transaction#: 84719203561") == "Transaction#: [REF]"
+
+def test_transaction_text_redacts_ppd_id():
+    assert redact_transaction_text("Acme Payroll LLC Direct Dep PPD ID: 10293847561") == \
+        "Acme Payroll LLC Direct Dep PPD ID: [REF]"
+
+def test_transaction_text_redacts_bare_long_digit_run():
+    # Zelle-style trailing reference number with no label at all
+    assert redact_transaction_text("Zelle Payment To Jane Doe 90123456789") == \
+        "Zelle Payment To Jane Doe [REF]"
+
+def test_transaction_text_preserves_masked_account_fragment():
+    # Bank-masked fragments (already <=4 digits) should not be touched
+    result = redact_transaction_text("Online Transfer To Chk ...1198 Transaction#: 84719203561")
+    assert "...1198" in result
+    assert "84719203561" not in result
+    assert "[REF]" in result
+
+
+# ── redact_transaction_text() — street addresses ──────────────────────────────
+
+def test_transaction_text_redacts_atm_street_address():
+    result = redact_transaction_text("Non-Chase ATM Withdraw 01/04 100 Main St Anytown NY Card 0352")
+    assert "100 Main St" not in result
+    assert "[ADDRESS]" in result
+    assert "Card 0352" in result  # already-masked card fragment untouched

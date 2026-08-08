@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from database import Category, MerchantMap, Transaction
 from services.ai_client import complete
 from services.merchant_mapper import apply_map, upsert_entry
+from services.pii_filter import redact_transaction_text
 from services.prompt_loader import categorization_system_prompt, categorization_user_prompt
 
 logger = logging.getLogger(__name__)
@@ -45,8 +46,10 @@ def _categorize_batch(
     db: Session,
 ) -> int:
     """Categorize one batch. Returns count of new map entries created."""
+    # Redact ref numbers/addresses for this outbound call only — categorization
+    # never needed them, and the stored tx.description keeps the real values.
     transactions_json = json.dumps([
-        {"id": str(tx.id), "description": tx.description, "amount": tx.amount, "type": tx.type}
+        {"id": str(tx.id), "description": redact_transaction_text(tx.description), "amount": tx.amount, "type": tx.type}
         for tx in batch
     ])
 

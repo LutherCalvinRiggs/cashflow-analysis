@@ -1,26 +1,25 @@
-"""
-PII redaction for bank statement text before it is sent to the AI provider
-or persisted to the local database.
+"""PII redaction, split by what each recipient actually needs to see.
 
-WHAT IS CAUGHT
---------------
-- Account / member numbers with a recognizable label:
-    "Account Number:", "Acct #:", "Acct No:", "Member Number:", "Member No:", etc.
-  The last 4 digits are preserved so the AI can still extract account_last4.
-- Routing / transit / ABA numbers with a label → replaced with [ROUTING]
-- Card numbers in grouped 4×4 format (spaces or dashes) → ****last4
-- SSNs in NNN-NN-NNNN or NNN NN NNNN format → [REDACTED]
-- Labeled transaction/reference numbers: "Transaction#:", "Trans ID:",
-  "Conf#:", "PPD ID:", etc. → [REF]
-- Bare long digit runs (8+ consecutive digits) left over after the above —
-  catches unlabeled Zelle/ACH/wire reference numbers embedded directly in
-  transaction descriptions (e.g. "Zelle Payment To Jane Doe 90123456789")
-  → [REF]. Already-masked fragments like "...1198" or "Card 0352" are
-  untouched since they're under 8 digits.
-- Common US street addresses embedded in a description (e.g. ATM location
-  lines like "100 Main St") → [ADDRESS]. Heuristic match on
-  "<number> <words> <street suffix>"; city/state that follows is not
-  caught.
+Two functions, two audiences:
+
+- `redact(text)` — run on the full statement text before the EXTRACTION AI
+  call and before persisting to `statements.raw_text`. Strips only fields
+  with account-access value and zero analytical value: account/member
+  numbers, routing numbers, card numbers, SSNs. These never need to reach
+  any AI provider or be queryable later, so they're always stripped.
+
+- `redact_transaction_text(text)` — run on `Transaction.description` before
+  the CATEGORIZATION AI call only (not before storage). Strips reference
+  numbers and street addresses — fields with real analytical value (e.g.
+  "how much did I spend in Chicago") that the extraction step deliberately
+  preserves in the database, but that categorization never needed in the
+  first place (it only looks at merchant name/amount/type).
+
+Net effect: account/routing/card/SSN never reach any AI provider. Reference
+numbers and street addresses reach the AI exactly once, during extraction,
+where seeing real per-transaction text is unavoidable (the AI is the parser).
+They're stripped before the categorization call and are never redacted in
+storage, so local queries against transaction descriptions keep full fidelity.
 
 KNOWN GAPS (conservative by design)
 ------------------------------------
@@ -28,6 +27,7 @@ KNOWN GAPS (conservative by design)
   header block without a recognizable label, it will NOT be caught.
 - Non-US formats: IBANs, UK sort codes, Australian BSBs are not caught.
 - Addresses without a recognized street suffix, or non-US address formats.
+- Full names and city/state/zip are not redacted by either function.
 If full privacy is required, point AI_BASE_URL at a local model (Ollama, LM
 Studio, etc.) so no text leaves the machine at all.
 """
@@ -92,11 +92,13 @@ _LONG_DIGIT_RUN_RE = re.compile(r"\b\d{8,}\b")
 
 
 def redact(text: str) -> str:
-    """Remove common PII patterns from bank statement text before sending to the AI.
+    """Strip account-access identifiers before the extraction AI call / storage.
 
     Conservative: only redacts when the label or format makes the pattern unambiguous.
     Preserves the last 4 digits of account and card numbers so the AI can still
     extract account_last4 from the statement header.
+
+    Does NOT touch reference numbers or addresses — see module docstring.
     """
     # Account numbers (labeled)
     text = _ACCOUNT_RE.sub(lambda m: _keep_last4(m, 1, 2), text)
@@ -113,13 +115,16 @@ def redact(text: str) -> str:
     # SSNs — no useful digits to preserve
     text = _SSN_RE.sub("[REDACTED]", text)
 
-    # Street addresses embedded in descriptions (e.g. ATM location lines)
+    return text
+
+
+def redact_transaction_text(text: str) -> str:
+    """Strip reference numbers and addresses before the categorization AI call only.
+
+    Never applied before storage — Transaction.description keeps the real
+    values in the database. See module docstring for why.
+    """
     text = _ADDRESS_RE.sub("[ADDRESS]", text)
-
-    # Labeled transaction/reference numbers — no useful digits to preserve
     text = _REF_RE.sub(lambda m: f"{m.group(1)}[REF]", text)
-
-    # Any remaining bare long digit runs (unlabeled P2P/ACH reference numbers)
     text = _LONG_DIGIT_RUN_RE.sub("[REF]", text)
-
     return text
