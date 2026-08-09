@@ -103,7 +103,12 @@ def _categorize_batch(
 def categorize(statement_id: int, db: Session) -> dict:
     """Categorize all transactions for a statement using the merchant map + AI.
 
-    Returns {"categorized": int, "map_hits": int, "new_map_entries": int, "warnings": list[str]}
+    Internal transfers are a deterministic fact from extraction's is_internal_transfer
+    flag, not a judgment call — assigned directly here, never sent to the AI. This
+    keeps the two signals from disagreeing (see decisions.md 2026-08-08).
+
+    Returns {"categorized": int, "map_hits": int, "new_map_entries": int,
+             "internal_transfers": int, "warnings": list[str]}
     """
     transactions = (
         db.query(Transaction)
@@ -112,12 +117,19 @@ def categorize(statement_id: int, db: Session) -> dict:
     )
 
     if not transactions:
-        return {"categorized": 0, "map_hits": 0, "new_map_entries": 0, "warnings": []}
+        return {"categorized": 0, "map_hits": 0, "new_map_entries": 0, "internal_transfers": 0, "warnings": []}
 
-    mapped, unmapped = apply_map(transactions, db)
+    flagged = [t for t in transactions if t.is_internal_transfer]
+    rest = [t for t in transactions if not t.is_internal_transfer]
+    for t in flagged:
+        t.category = "Internal Transfer"
+        t.confidence = 1.0
+
+    mapped, unmapped = apply_map(rest, db)
     map_hits = len(mapped)
 
-    categories = db.query(Category).all()
+    # "Internal Transfer" is deliberately excluded — assigned above, never by the AI.
+    categories = db.query(Category).filter(Category.name != "Internal Transfer").all()
     categories_json = json.dumps([{"name": c.name, "description": c.description} for c in categories])
     map_context = _build_map_context(db)
 
@@ -141,5 +153,6 @@ def categorize(statement_id: int, db: Session) -> dict:
         "categorized": len(transactions) - uncategorized,
         "map_hits": map_hits,
         "new_map_entries": new_map_entries,
+        "internal_transfers": len(flagged),
         "warnings": warnings,
     }

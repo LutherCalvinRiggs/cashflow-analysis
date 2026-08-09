@@ -29,19 +29,21 @@ def db():
     # Seed one category
     session.add(Category(name="Groceries", description="Supermarkets and grocery stores", color="#22c55e"))
     session.add(Category(name="Utilities", description="Electric, gas, water, internet", color="#3b82f6"))
+    session.add(Category(name="Internal Transfer", description="Movement between the user's own accounts", color="#444444"))
     session.commit()
 
     yield session
     session.close()
 
 
-def _make_transaction(db, description="FOODCELLAR LIC NY", amount=42.50, tx_type="debit", statement_id=1):
+def _make_transaction(db, description="FOODCELLAR LIC NY", amount=42.50, tx_type="debit", statement_id=1, is_internal_transfer=False):
     tx = Transaction(
         statement_id=statement_id,
         date="2026-06-01",
         description=description,
         amount=amount,
         type=tx_type,
+        is_internal_transfer=1 if is_internal_transfer else 0,
     )
     db.add(tx)
     db.commit()
@@ -173,6 +175,60 @@ def test_categorize_uses_map_skips_ai(db):
     mock_ai.assert_not_called()
     assert result["map_hits"] == 1
     assert tx.category == "Groceries"
+
+
+# ── categorize() — internal transfers (deterministic, no AI) ─────────────────
+
+def test_categorize_assigns_internal_transfer_deterministically(db):
+    tx = _make_transaction(db, description="Online Transfer To Chk ...1198 Transaction#: 12345678", is_internal_transfer=True)
+
+    with patch("services.categorizer.complete") as mock_ai:
+        result = categorize(statement_id=1, db=db)
+
+    mock_ai.assert_not_called()
+    assert tx.category == "Internal Transfer"
+    assert tx.confidence == 1.0
+    assert result["internal_transfers"] == 1
+    assert result["categorized"] == 1
+
+
+def test_categorize_excludes_internal_transfer_from_ai_category_list(db):
+    _make_transaction(db, description="UNKNOWN MERCHANT XYZ", is_internal_transfer=False)
+
+    ai_response = json.dumps([{
+        "id": "1", "category": "Utilities", "confidence": "medium",
+        "notes": None, "suggested_key": "unknown merchant xyz",
+    }])
+
+    with patch("services.categorizer.complete", return_value=ai_response) as mock_ai:
+        categorize(statement_id=1, db=db)
+
+    sent_system_prompt, sent_user_prompt = mock_ai.call_args[0]
+    assert "Internal Transfer" not in sent_user_prompt
+
+
+def test_categorize_mixed_batch_flagged_and_unflagged(db):
+    transfer_tx = _make_transaction(db, description="Online Transfer To Chk ...1198", is_internal_transfer=True)
+    other_tx = _make_transaction(db, description="UNKNOWN MERCHANT XYZ", is_internal_transfer=False)
+
+    ai_response = json.dumps([{
+        "id": str(other_tx.id), "category": "Utilities", "confidence": "medium",
+        "notes": None, "suggested_key": "unknown merchant xyz",
+    }])
+
+    with patch("services.categorizer.complete", return_value=ai_response) as mock_ai:
+        result = categorize(statement_id=1, db=db)
+
+    db.refresh(transfer_tx)
+    db.refresh(other_tx)
+    assert transfer_tx.category == "Internal Transfer"
+    assert other_tx.category == "Utilities"
+    assert result["internal_transfers"] == 1
+    assert result["categorized"] == 2
+    # Only the non-transfer transaction should ever reach the AI
+    _, sent_user_prompt = mock_ai.call_args[0]
+    assert str(transfer_tx.id) not in sent_user_prompt
+    assert str(other_tx.id) in sent_user_prompt
 
 
 # ── categorize() — AI path ────────────────────────────────────────────────────
