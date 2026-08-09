@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
-import { api, updateTransactionCategory } from "../api/client";
+import { api, createCategory, updateTransactionCategory } from "../api/client";
 
 const PAGE_SIZE = 50;
 
@@ -45,6 +45,7 @@ export default function Ledger({ filters = {} }) {
   const [meta, setMeta] = useState({ total: 0, pages: 1 });
   const [expandedId, setExpandedId] = useState(null);
   const [editCategory, setEditCategory] = useState("");
+  const [newCategoryName, setNewCategoryName] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
 
@@ -90,20 +91,28 @@ export default function Ledger({ filters = {} }) {
     }
     setExpandedId(tx.id);
     setEditCategory(tx.category || "");
+    setNewCategoryName("");
     setSaveError(null);
   }
 
   async function saveCategory(tx) {
-    if (!editCategory || editCategory === tx.category) {
+    const trimmedNewCategory = newCategoryName.trim();
+    const category = trimmedNewCategory || editCategory;
+    if (!category || category === tx.category) {
       setExpandedId(null);
       return;
     }
     setSaving(true);
     setSaveError(null);
     try {
-      await updateTransactionCategory(tx.id, editCategory);
+      if (trimmedNewCategory) {
+        await createCategory(trimmedNewCategory);
+        setCategories(await api.request("/categories"));
+      }
+      await updateTransactionCategory(tx.id, category);
       await loadTransactions();
       setExpandedId(null);
+      setNewCategoryName("");
     } catch (err) {
       setSaveError(err.message);
     } finally {
@@ -218,7 +227,7 @@ export default function Ledger({ filters = {} }) {
                               </div>
                             )}
                             <div>
-                              <div className="text-xs text-gray-500 mb-1">Category</div>
+                              <div className="text-xs text-gray-500 mb-1 text-left self-start">Category</div>
                               <div className="flex items-center gap-2">
                                 <select
                                   value={editCategory}
@@ -231,6 +240,13 @@ export default function Ledger({ filters = {} }) {
                                     </option>
                                   ))}
                                 </select>
+                                <input
+                                  type="text"
+                                  value={newCategoryName}
+                                  onChange={(e) => setNewCategoryName(e.target.value)}
+                                  placeholder="Create a new category"
+                                  className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-gray-200 text-sm placeholder-gray-600 focus:outline-none focus:border-gray-500"
+                                />
                                 <button
                                   onClick={() => saveCategory(tx)}
                                   disabled={saving}

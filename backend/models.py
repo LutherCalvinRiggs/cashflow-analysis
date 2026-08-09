@@ -42,6 +42,10 @@ class CategoryOut(BaseModel):
         from_attributes = True
 
 
+class CategoryCreate(BaseModel):
+    name: str
+
+
 class CategoryUpdate(BaseModel):
     category: str
 

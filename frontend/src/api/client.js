@@ -45,4 +45,12 @@ export function updateTransactionCategory(id, category) {
   });
 }
 
+export function createCategory(name) {
+  return request("/categories", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+}
+
 export const api = { request };

@@ -2,10 +2,16 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from database import Category, Transaction, get_db
-from models import CategoryOut, CategoryUpdate, CategoryUpdateResponse, TransactionOut, TransactionPage
+from models import CategoryCreate, CategoryOut, CategoryUpdate, CategoryUpdateResponse, TransactionOut, TransactionPage
 from services.merchant_mapper import find_matching_transactions, find_related_entry, upsert_entry
 
 router = APIRouter(prefix="/api", tags=["transactions"])
+
+# Rotated through for user-created categories so they don't all render identically gray.
+_NEW_CATEGORY_COLORS = [
+    "#f59e0b", "#ec4899", "#06b6d4", "#ef4444", "#14b8a6",
+    "#6366f1", "#84cc16", "#f97316", "#f43f5e", "#8b5cf6",
+]
 
 
 @router.get("/transactions", response_model=TransactionPage)
@@ -82,6 +88,31 @@ def list_transaction_periods(db: Session = Depends(get_db)):
 @router.get("/categories", response_model=list[CategoryOut])
 def list_categories(db: Session = Depends(get_db)):
     return db.query(Category).order_by(Category.name).all()
+
+
+@router.post("/categories", response_model=CategoryOut)
+def create_category(body: CategoryCreate, db: Session = Depends(get_db)):
+    """Create a category, or return the existing one if the name's already taken.
+
+    Idempotent by design — this backs an inline "create a category" input embedded
+    in the transaction category-edit flow, where "create X" should just succeed
+    and be usable immediately whether or not X already exists, not force the
+    caller to handle a 409.
+    """
+    name = body.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Category name cannot be empty")
+
+    existing = db.query(Category).filter(Category.name == name).first()
+    if existing:
+        return existing
+
+    color = _NEW_CATEGORY_COLORS[db.query(Category).count() % len(_NEW_CATEGORY_COLORS)]
+    category = Category(name=name, description=f"User-created category: {name}", color=color)
+    db.add(category)
+    db.commit()
+    db.refresh(category)
+    return category
 
 
 @router.patch("/transactions/{transaction_id}/category", response_model=CategoryUpdateResponse)

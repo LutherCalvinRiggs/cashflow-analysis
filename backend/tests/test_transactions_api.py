@@ -115,6 +115,34 @@ def test_list_categories():
     assert "Utilities" in names
 
 
+def test_create_category_succeeds():
+    r = client.post("/api/categories", json={"name": "ATM"})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["name"] == "ATM"
+    assert body["color"]
+    assert "ATM" in body["description"]
+
+    names = [c["name"] for c in client.get("/api/categories").json()]
+    assert "ATM" in names
+
+
+def test_create_category_idempotent_for_existing_name():
+    first = client.post("/api/categories", json={"name": "Streaming"})
+    second = client.post("/api/categories", json={"name": "Streaming"})
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert first.json()["id"] == second.json()["id"]
+
+    names = [c["name"] for c in client.get("/api/categories").json()]
+    assert names.count("Streaming") == 1
+
+
+def test_create_category_rejects_empty_name():
+    r = client.post("/api/categories", json={"name": "   "})
+    assert r.status_code == 400
+
+
 def test_update_category_persists_and_returns_pattern():
     r = client.get("/api/transactions?category=Groceries")
     tx_id = r.json()["items"][0]["id"]
