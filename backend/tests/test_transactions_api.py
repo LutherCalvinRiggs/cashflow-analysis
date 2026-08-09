@@ -23,11 +23,13 @@ def override_get_db():
         db.close()
 
 
-app.dependency_overrides[get_db] = override_get_db
-
-
 @pytest.fixture(autouse=True)
 def setup_db():
+    # Set (and restore) the override per-test rather than at module import time —
+    # multiple test files overriding get_db at import time collide, since all
+    # test modules are imported before any test runs, and whichever import ran
+    # last silently wins for the entire session.
+    app.dependency_overrides[get_db] = override_get_db
     Base.metadata.create_all(engine)
     db = TestSession()
     db.add(Category(name="Groceries", description="Grocery stores", color="#22c55e"))
@@ -48,6 +50,7 @@ def setup_db():
     db.close()
     yield
     Base.metadata.drop_all(engine)
+    app.dependency_overrides.pop(get_db, None)
 
 
 client = TestClient(app)

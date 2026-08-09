@@ -27,6 +27,7 @@ class Statement(Base):
     account_last4 = Column(String, nullable=True)
     account_type = Column(String, nullable=True)     # "checking" | "savings" | "credit" | "unknown"
     raw_text = Column(Text, nullable=True)
+    file_hash = Column(String, nullable=True, index=True)  # sha256 of the raw uploaded bytes, for dedup
 
 
 class Transaction(Base):
@@ -98,8 +99,25 @@ def _seed_categories(db: Session) -> None:
     db.commit()
 
 
+def _add_missing_columns() -> None:
+    """Add columns introduced after a DB file already existed.
+
+    create_all() only creates missing tables, not new columns on existing
+    ones — there's no migration framework in this project, so this covers
+    the gap for a single-user local SQLite file.
+    """
+    if engine.dialect.name != "sqlite":
+        return
+    with engine.connect() as conn:
+        existing = {row[1] for row in conn.execute(text("PRAGMA table_info(statements)"))}
+        if "file_hash" not in existing:
+            conn.execute(text("ALTER TABLE statements ADD COLUMN file_hash VARCHAR"))
+            conn.commit()
+
+
 def init_db() -> None:
     Base.metadata.create_all(bind=engine)
+    _add_missing_columns()
     db = SessionLocal()
     try:
         _seed_categories(db)

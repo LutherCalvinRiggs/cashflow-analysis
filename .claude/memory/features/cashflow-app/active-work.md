@@ -20,14 +20,18 @@
 - **2026-08-08: re-added the debit/credit type filter** (dropped when FilterBar was redesigned) as a 5th select; confirmed working live.
 - **2026-08-08: relocated the chat panel** from the right side to a collapsible left-side panel with an outlined CTA toggle under the nav links, per Luther's spec. Layout/shell only, verified live, no console errors. Actual chat functionality is still Phase 4 — Luther will explore that later.
 - **2026-08-08: researched `firecrawl/anydoc`** at Luther's request (a PDF→Markdown converter he found) — verified real via GitHub/PyPI APIs but only 5 days old (v0.1.7). Recommended against adopting it yet; not implemented. Full detail in decisions.md.
+- **2026-08-08: PII confirmed clean at the repo level** — grepped all tracked files across every new commit for the specific real values seen this session (name, city, account digits, ref#/address fragments); zero hits. `cashflow.db`/`.env` both untracked.
+- **2026-08-08: completed e2e section 2 (upload edge cases) — all 4 pass** (2.1 non-PDF, 2.2 scanned/image-only PDF via a synthetic file, 2.3 duplicate upload, 2.4 backend down mid-upload). Details in decisions.md.
+- **2026-08-08: added file-hash-based upload dedup** — byte-identical re-uploads now rejected with `409` before any AI call. Added `Statement.file_hash`, a small manual-migration step in `database.py` (no migration framework exists), and `tests/test_upload.py` (3 new tests). **Found and fixed a real cross-file test-isolation bug** while adding it — see decisions.md, worth reading before adding a 4th `TestClient`-based test file.
+- 59/59 backend tests passing (up from 56).
 
 ## Next Steps
-- **Get Luther's approval to commit** — redaction split, batch-upload/redirect/FilterBar/sort, type-filter re-add, and chat-panel relocation are all sitting uncommitted together in the working tree
+- **Get Luther's approval to commit** — redaction split, batch-upload/redirect/FilterBar/sort, type-filter re-add, chat-panel relocation, and upload dedup are all sitting uncommitted together in the working tree
 - Batch-upload **success** path still untested (no test PDF was available to the agent this session) — will get exercised next time Luther uploads a real statement
 - Backend has no test coverage yet for the new `year`/`month`/`sort` query params or the `/transactions/periods` endpoint — worth a follow-up unit test pass
 - If Luther wants to revisit `anydoc`: do a side-by-side Markdown-output comparison against pdfplumber on real statement PDFs before touching `pdf_extractor.py`
 - **New: a dev-server startup issue needs debugging** (not urgent, deferred by Luther to "another time") — see implementation-notes.md 2026-07-28 for what was observed (port conflicts + corrupted Vite dep cache leaving the frontend stuck serving 503s / blank page)
-- Continue e2e test plan (`.claude/memory/features/cashflow-app/tests/e2e-test-plan.md`) — upload edge cases, ledger, filters, resilience sections not yet run
+- Continue e2e test plan — section 2 done; sections 3 (ledger, partial), 4 (filters, informally verified), 5 (resilience), 6.1/6.2 (merchant map), 7 (API smoke tests), 8 (re-run automated suite count) still open
 - Remaining backlog (see TaskList): #1 test_extraction.py still missing, #3 frontend test tooling, #4 CLAUDE.md env var drift (`ANTHROPIC_API_KEY` vs actual `AI_API_KEY`), #6 review upload.py error-detail information disclosure
 - Known redaction gap surfaced 2026-08-08, not yet actioned: full name and city/state/zip pass through `raw_text` completely unredacted (only the street-address line is caught) — local-only exposure, not sent to any AI, but worth a follow-up if it matters to Luther
 - Once e2e testing is complete: merge PR #3 to main, then begin Phase 3 (charts + stats API)

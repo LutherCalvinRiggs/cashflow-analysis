@@ -1,3 +1,4 @@
+import hashlib
 import json
 import logging
 
@@ -41,6 +42,17 @@ async def upload_statement(file: UploadFile, db: Session = Depends(get_db)):
 
     raw_bytes = await file.read()
 
+    file_hash = hashlib.sha256(raw_bytes).hexdigest()
+    existing = db.query(Statement).filter(Statement.file_hash == file_hash).first()
+    if existing is not None:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"This exact PDF was already uploaded as statement #{existing.id} "
+                f"({existing.filename}) on {existing.uploaded_at:%Y-%m-%d}."
+            ),
+        )
+
     import io
     extraction = extract_text(io.BytesIO(raw_bytes))
     if not extraction.get("full_text"):
@@ -79,6 +91,7 @@ async def upload_statement(file: UploadFile, db: Session = Depends(get_db)):
         account_last4=ai_data.get("account_last4"),
         account_type=ai_data.get("account_type"),
         raw_text=redacted_text,
+        file_hash=file_hash,
     )
     db.add(statement)
     db.flush()  # get statement.id before committing

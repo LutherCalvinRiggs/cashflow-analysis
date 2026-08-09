@@ -7,7 +7,7 @@
 - [x] `.env` at repo root has a real `AI_API_KEY` (no placeholder)
 - [x] `npm run start` from repo root — both servers up
 - [x] `curl localhost:8787/health` returns `{"status":"ok","db":"ok"}`
-- [ ] At least 2 real PDF bank statements on hand (different months, ideally different layouts). Optional but valuable: one scanned/image-only PDF, one non-PDF file (e.g. .png renamed or a .txt)
+- [x] At least 2 real PDF bank statements on hand (different months, ideally different layouts). Optional but valuable: one scanned/image-only PDF, one non-PDF file (e.g. .png renamed or a .txt)
 
 > Note: DB starts empty. Run Section 1 before Sections 3–4 — ledger tests need data.
 
@@ -19,13 +19,13 @@
 - [x] 1.3 Repeat via the file-picker (not drag-and-drop) with the second statement
 - [x] 1.4 Spot-check accuracy: pick 5 transactions from the source PDF, confirm each appears in the ledger with correct **date, description, amount, and debit/credit direction**
 - [x] 1.5 Spot-check categorization: are the AI-assigned categories sensible for ~10 transactions? Note any misfires (feeds the prompt-tuning loop, not pass/fail)
-- [~] 1.6 PII check: **investigated 2026-07-28.** Found real PII in descriptions (reference numbers, an ATM street address) and separately in `statements.raw_text` (full account numbers, name, address stored unredacted at rest). Both fixed in `pii_filter.py` / `upload.py` — see decisions.md 2026-07-28. Old test data purged; **pending Luther's re-upload of the 2 source PDFs to confirm the fix live in the ledger** before checking this off
+- [x] 1.6 PII check: fixed 2026-07-28, redesigned 2026-08-08 (audience-scoped redaction — see decisions.md). Luther re-uploaded both source PDFs and confirmed `[REF]`/`[ADDRESS]` render correctly in the ledger where account/routing/card/SSN patterns would appear; real ref#/addresses are now intentionally preserved in storage for future chat queries. Passing.
 
 ## 2. Upload — edge cases
-- [ ] 2.1 Non-PDF file: picker should refuse it, or the API should reject it with a user-facing error — not a stack trace
-- [ ] 2.2 Scanned/image-only PDF (if available): expect a graceful result with a warning about no extractable text — not a crash
-- [ ] 2.3 Same PDF uploaded twice: observe what happens. **Known unknown** — duplicate handling may not exist; record whether transactions double up
-- [ ] 2.4 Upload with backend killed mid-flight (stop `api` in the concurrently output): frontend should surface an error, not hang
+- [x] 2.1 Non-PDF file: confirmed clean at both layers 2026-08-08 — frontend picker rejects with "Only PDF files are accepted." before any network call; API also rejects a `.txt` sent directly (bypassing the frontend) with `400 {"detail":"Only PDF files are accepted"}`, no stack trace
+- [x] 2.2 Scanned/image-only PDF: confirmed 2026-08-08 with a synthetic image-only PDF (Pillow-rendered text-as-pixels, no text layer — pdfplumber confirmed `full_text == ""`) rather than a real scan, since that exercises the same "zero extractable text" code path without needing a physical document. API returns `422 {"detail":"No text could be extracted from the PDF"}`; frontend shows it as a clean per-file error, no crash
+- [x] 2.3 Same PDF uploaded twice: **originally observed as a gap via real usage 2026-08-08** (doubled the ledger, 15 → 30 transactions, no warning). **Dedup added same day** — see decisions.md. Byte-identical re-uploads are now rejected with `409` before any extraction/AI call runs. Verified via 3 automated tests (`tests/test_upload.py`): duplicate rejected, AI never called twice, different files still both succeed. Scope: only catches exact byte-identical files, not the same statement re-exported/re-scanned with different bytes
+- [x] 2.4 Upload with backend down: confirmed 2026-08-08. **Note on methodology**: `concurrently -k` kills the whole tree the instant either child dies, so "kill just api, leave web running" isn't reachable while running under `npm run start` — killing api cascades and kills web too. Ran backend and frontend as two independent standalone processes instead, killed only the backend, uploaded against the now-dead API from an already-loaded tab. Frontend showed `HTTP 502` (Vite's proxy reporting the backend unreachable) within ~1s, no hang, clean "Upload another statement" recovery. True mid-*request* timing (kill while the backend is actively processing, not just absent before the request starts) isn't reliably reproducible through this tooling — this is a close proxy, same code path (`uploadStatement`'s xhr error handler), same outcome
 
 ## 3. Ledger
 - [ ] 3.1 Transactions listed most-recent-first
