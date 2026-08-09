@@ -28,20 +28,20 @@
 - [x] 2.4 Upload with backend down: confirmed 2026-08-08. **Note on methodology**: `concurrently -k` kills the whole tree the instant either child dies, so "kill just api, leave web running" isn't reachable while running under `npm run start` — killing api cascades and kills web too. Ran backend and frontend as two independent standalone processes instead, killed only the backend, uploaded against the now-dead API from an already-loaded tab. Frontend showed `HTTP 502` (Vite's proxy reporting the backend unreachable) within ~1s, no hang, clean "Upload another statement" recovery. True mid-*request* timing (kill while the backend is actively processing, not just absent before the request starts) isn't reliably reproducible through this tooling — this is a close proxy, same code path (`uploadStatement`'s xhr error handler), same outcome
 
 ## 3. Ledger
-- [ ] 3.1 Transactions listed most-recent-first
-- [ ] 3.2 Credits render green, debits red; amounts formatted correctly (watch signs — a common extraction bug)
+- [x] 3.1 Transactions listed most-recent-first: confirmed 2026-08-08 (default sort desc, Jan 6 2025 at top through Dec 2024)
+- [x] 3.2 Credits render green, debits red; amounts formatted correctly: confirmed 2026-08-08 — `$` sign, comma separators, 2 decimals, correct +/- prefix per type, no sign bugs observed
 - [x] 3.3 Click a row → expands showing AI notes and category confidence, plus an editable category dropdown (added 2026-07-20)
-- [ ] 3.4 Pagination: with both statements uploaded, page through; total count consistent; no repeated or skipped rows across pages
-- [ ] 3.5 Category badges match the expanded row's category
+- [x] 3.4 Pagination: confirmed 2026-08-08 with 60 temporary synthetic rows (real data alone is only 15, below the 50/page threshold — inserted, tested, deleted afterward, not real financial data). Page 1/2 = 50/25, zero overlap and zero gap between pages (verified via direct API query, not just visually), Next/Prev navigate correctly, both buttons correctly disable at their respective boundary
+- [x] 3.5 Category badges match the expanded row's category: confirmed 2026-08-08 (badge "Income" == expanded dropdown "Income" for the same row; spot-checked other rows' badge colors are consistent throughout — Internal Transfer/gray, Childcare/purple, Fees & Interest/gray, Income/green)
 
 ## 4. Filters
-- [ ] 4.1 Category filter: pick one category → only those rows; total updates
-- [ ] 4.2 Type filter (credit/debit): rows and totals consistent
-- [ ] 4.3 Date range: set a range covering only one statement → only that month's rows
-- [ ] 4.4 Exclude-transfers toggle: transfer-categorized rows disappear
-- [ ] 4.5 Combined filters (category + date range) behave as AND
-- [ ] 4.6 Clearing filters restores the full ledger
-- [ ] 4.7 Filter to an empty result → sane empty state, not an error or infinite spinner
+- [x] 4.1 Category filter: confirmed 2026-08-08 — `category=Childcare` → 4/4 rows, all correctly badged
+- [x] 4.2 Type filter (credit/debit): confirmed 2026-08-08 — `type=credit` → 5/5 rows, all correctly badged
+- [x] 4.3 Year/month (plan predates the FilterBar redesign — date-range inputs were replaced by year/month selects): confirmed 2026-08-08 — year=2024 → 9, year=2025 → 6 (sums to 15), month cascades correctly (2024 only offers December), year+month combo stays consistent
+- [x] 4.4 Exclude-transfers toggle: confirmed 2026-08-08 — 15 → 11, exactly the 4 `is_internal_transfer=true` rows disappear. **Found a real categorization quirk while verifying, not a filter bug**: transaction #27 (an ATM withdrawal) is categorized "Internal Transfer" but its `is_internal_transfer` flag is `false`, so it correctly stays visible — the filter is flag-based, not category-label-based, and behaved exactly as designed. Worth feeding back into categorization prompt-tuning (an ATM withdrawal isn't really an "Internal Transfer")
+- [x] 4.5 Combined filters (category + year) behave as AND: confirmed 2026-08-08 — `category=Internal Transfer&year=2024` → 3 (ground-truth verified via direct API query first)
+- [x] 4.6 Clearing filters restores the full ledger: confirmed 2026-08-08 — 15 restored
+- [x] 4.7 Filter to an empty result: confirmed 2026-08-08 — `category=Groceries` → clean "No transactions found" state, no error/spinner. **Minor copy nit, not a bug**: message says "Upload a statement to get started," which reads oddly for a filtered-empty-result (implies an empty DB, not just an empty filter combo) — cosmetic, not blocking
 
 ## 5. Resilience
 - [ ] 5.1 Restart both servers (`Ctrl+C`, `npm run start` again) → data persists, ledger unchanged (SQLite file survives)
